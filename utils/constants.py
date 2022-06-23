@@ -1,4 +1,11 @@
+import datetime as dt
 import streamlit as st
+
+TD_DATE = dt.date.today()
+MIN_DATE = TD_DATE + dt.timedelta(days=-365*2)
+MAX_DATE = TD_DATE + dt.timedelta(days=365*2)
+START_YEAR = str(TD_DATE.year)
+END_YEAR = '2031'
 
 K_TIMES = 1000
 M_TIMES = 1000000
@@ -7,6 +14,11 @@ B_TIMES = 1000000000
 DB_CONNECTION_PASS = st.secrets['passwords']['dbConnection']
 
 RCL_FIELD = 'PREVISÃO ATUALIZADA 2021'
+
+TRANSLATE_BOOL_DICT = {
+    True: 'SIM',
+    False: 'NÃO'
+}
 
 COLORS_LIST = [
     '#081F2D',

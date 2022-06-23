@@ -12,6 +12,13 @@ import plotly.graph_objects as go
 from .queries import *
 from .constants import *
 
+############################ HEADER ############################
+def header():
+    st.image('static/header.png', use_column_width=True)
+    st.title('Mapa de Precificação')
+
+    
+
 ############################ CONNECTION TO DB ############################
 @st.cache(allow_output_mutation=True, show_spinner=False, suppress_st_warning=True)
 def createConnection():
@@ -75,6 +82,14 @@ def getEntityPlan(idEntity, cnn):
 
     return entityPlan
 
+@st.cache(hash_funcs={sqlalchemy.engine.base.Engine: id}, show_spinner=False, suppress_st_warning=True)
+def getEntityDeal(idEntity, cnn):
+    
+    query = queryEntityDeal(idEntity)
+    entityDeal = pd.read_sql(query, cnn)
+
+    return entityDeal
+
 @st.cache(show_spinner=False, suppress_st_warning=True)
 def ufOptions(entitiesDf, typeEnt):
     
@@ -115,7 +130,6 @@ def getEntityId(entitiesDf, typeEnt, uf, courtname, entityname):
         st.error('Existe duplicidade para a entidade selecionada. Validar entidade selecionada!!')
         
     return dupEntitiesDf['entityid'].iloc[0]
-
 
 
 ############################ PLOTS ############################
@@ -174,6 +188,36 @@ def entityMapPaymentsBarChart(entityMapDf):
         ))
 
     return fig
+
+@st.cache(show_spinner=False, suppress_st_warning=True)
+def priceByDurationBarChart(durations, prices):
+
+    fig = go.Figure()
+
+    fig.add_trace(
+        go.Bar(
+            x=durations,
+            y=prices,
+            text=['Acordo', 'Base Case', 'C/ Ajuste', 'Pior'],
+            marker=dict(
+                color=COLORS_LIST
+            )
+        )
+    )
+
+    fig.update_layout(title_text='Preço por faixa de duration',
+        xaxis=dict(
+            title='Duration (Anos)'
+            
+        ),
+        yaxis=dict(
+            title='Preço (%)'
+        )
+    )
+    # fig.update_traces(width=0.5)
+
+    return fig
+
 
 @st.cache(show_spinner=False, suppress_st_warning=True)
 def entityScatterPlot(queueDf):

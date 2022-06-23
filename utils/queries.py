@@ -143,3 +143,31 @@ def queryEntityPlan(idEntity):
     """
 
     return query
+
+def queryEntityDeal(idEntity):
+    
+    query = f"""
+    SELECT 
+        entitydeal.id AS id,
+        entitydeal.entity as entity,
+        entitydeal.name as name,
+        entitydeal.acordo as acordo,
+        entitydeal.obsacordo as obsacordo,
+        entitydeal.compensacao as compensacao,
+        entitydeal.rpv as rpv,
+        entitydeal.pctacordo as pctacordo,
+        entitydeal.pctdesagiomin as pctdesagiomin,
+        entitydeal.pctdesagiomax as pctdesagiomax,
+        entitydeal.termosacordo as termosacordo,
+        entitydeal.contagemeditais as contagemeditais,
+        entitydeal.prazoesperadoparapagamento as prazoesperadoparapagamento,
+        entitydeal.montantemedioderecursosporedital as montantemedioderecursosporedital,
+        entitydealstatustype.name as dealfrequencia
+    FROM 
+        entitydeal
+    LEFT JOIN entitydealstatustype ON entitydealstatustype.id=entitydeal.statusfrequencia
+    WHERE
+        entitydeal.entity={idEntity}
+    """
+
+    return query
