@@ -17,7 +17,8 @@ RCL_FIELD = 'PREVISÃO ATUALIZADA 2021'
 
 TRANSLATE_BOOL_DICT = {
     True: 'SIM',
-    False: 'NÃO'
+    False: 'NÃO',
+    '-': '-'
 }
 
 COLORS_LIST = [

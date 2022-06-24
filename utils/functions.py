@@ -1,23 +1,25 @@
 import sys
+from matplotlib.pyplot import title
 sys.path.append('../')
 
 from sqlalchemy import create_engine
+import math
 import sqlalchemy
 import streamlit as st
 import pandas as pd
 import numpy as np
 
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 from .queries import *
 from .constants import *
+from .computations import *
 
 ############################ HEADER ############################
 def header():
     st.image('static/header.png', use_column_width=True)
-    st.title('Mapa de Precificação')
-
-    
+    st.title('Mapa de Precificação')    
 
 ############################ CONNECTION TO DB ############################
 @st.cache(allow_output_mutation=True, show_spinner=False, suppress_st_warning=True)
@@ -131,6 +133,37 @@ def getEntityId(entitiesDf, typeEnt, uf, courtname, entityname):
         
     return dupEntitiesDf['entityid'].iloc[0]
 
+@st.cache(show_spinner=False, suppress_st_warning=True)
+def createCurveIrrXDuration(chronologyPricePrct, durationLowerLimit, hairCutAuction=0):
+    step = 0.2
+    minValue = durationLowerLimit if durationLowerLimit < 2 else durationLowerLimit - step * 2
+
+    stopCalc = False
+    baseCalcDur = minValue
+    stepsAfterWaterLine = 5
+    stopFlag = 0
+    irr = 100
+
+    durationPlot = []
+    irrPlot = []
+
+    while not bool(stopCalc) and stopFlag < stepsAfterWaterLine:
+        try:
+            vfut = calculateFutureValue(baseCalcDur, hairCutAuction=hairCutAuction)
+            irr = round(calculateIRR(futureValue=vfut, tradedValue=chronologyPricePrct, periodYearEq=baseCalcDur), 2) * 100
+
+            durationPlot.append(baseCalcDur)
+            irrPlot.append(irr)
+
+        except:
+            pass
+
+        if irr < 35:
+            stopFlag += 1
+
+        baseCalcDur += step
+
+    return durationPlot, irrPlot
 
 ############################ PLOTS ############################
 
@@ -182,7 +215,7 @@ def entityMapPaymentsBarChart(entityMapDf):
             marker_color=COLORS_LIST[:4])
     ])
 
-    fig.update_layout(title_text='Mapa de Pagamento',
+    fig.update_layout(title_text='Mapa de Pagamento CNJ',
         xaxis=dict(
             title='R$'
         ))
@@ -284,3 +317,192 @@ def entityCountPieChart(queueDf):
     fig.update_layout(title_text='Composição da Fila de Precatórios por Banda de Valor')
 
     return fig
+
+@st.cache(show_spinner=False, suppress_st_warning=True)
+def chronologyIRRDurPlot(chronologyPlotDur, chronologyPlotIrr, chronologyDuration, chronologyIrr, **kwargs):
+
+    chronologyWaterLine = np.full(len(chronologyPlotDur), 35)
+
+    # Chart with deal
+    if 'dealPlotDur' in kwargs:
+        dealWaterLine = np.full(len(kwargs['dealPlotDur']), 35)
+
+        fig = make_subplots(rows=2, cols=1)
+
+        ###################### CHRONOLOGY ######################
+
+        fig.add_trace(go.Scatter(
+            x=[chronologyDuration],
+            y=[chronologyIrr],
+            mode='markers',
+            marker_symbol='cross',
+            name='TIR Compra Cronologia',
+            legendrank=1,
+            marker=dict(
+                color=COLORS_LIST[0],
+                size=12
+            )
+        ), row=1, col=1)
+
+        # Line Chart
+        fig.add_trace(go.Scatter(
+            x=chronologyPlotDur,
+            y=chronologyPlotIrr,
+            mode='lines+markers',
+            name='Curva TIR Cronologia',
+            legendrank=3,
+            line=dict(
+                color=COLORS_LIST[1]
+            )
+        ), row=1, col=1)
+
+        # Waterline
+        fig.add_trace(go.Scatter(
+            x=chronologyPlotDur,
+            y=chronologyWaterLine,
+            mode='lines',
+            name='35%',
+            legendrank=5,
+            line=dict(
+                color='#B25068'
+            )
+        ), row=1, col=1)
+
+        ###################### DEAL ######################
+
+        fig.add_trace(go.Scatter(
+            x=[kwargs['dealDuration']],
+            y=[kwargs['dealIrr']],
+            mode='markers',
+            marker_symbol='cross',
+            name='TIR Compra Acordo',
+            legendrank=2,
+            marker=dict(
+                color=COLORS_LIST[2],
+                size=12
+            )
+        ), row=2, col=1)
+
+        # Line Chart
+        fig.add_trace(go.Scatter(
+            x=kwargs['dealPlotDur'],
+            y=kwargs['dealPlotIrr'],
+            mode='lines+markers',
+            name='Curva TIR Acordo',
+            legendrank=4,
+            line=dict(
+                color=COLORS_LIST[3]
+            )
+        ), row=2, col=1)
+
+        # Waterline
+        fig.add_trace(go.Scatter(
+            x=kwargs['dealPlotDur'],
+            y=dealWaterLine,
+            name='35%',
+            mode='lines',
+            showlegend=False,
+            line=dict(
+                color='#B25068'
+            )
+        ), row=2, col=1)
+
+        # Update axis
+        fig.update_xaxes(title_text='Duration (Anos)', row=2, col=1)
+
+        fig.update_yaxes(title_text='TIR Cronologia (%)', row=1, col=1)
+        fig.update_yaxes(title_text='TIR Acordo (%)', row=2, col=1)
+
+        fig.update_layout(
+            title='Análise de Sensibilidade da TIR'
+        )
+
+
+    else: 
+        fig = go.Figure()
+
+        fig.add_trace(go.Scatter(
+            x=[chronologyDuration],
+            y=[chronologyIrr],
+            mode='markers',
+            marker_symbol='cross',
+            name='TIR Compra Cronologia',
+            marker=dict(
+                color=COLORS_LIST[0],
+                size=12
+            )
+        ))
+
+        # Line Chart
+        fig.add_trace(go.Scatter(
+            x=chronologyPlotDur,
+            y=chronologyPlotIrr,
+            mode='lines+markers',
+            name='Curva TIR Cronologia',
+            line=dict(
+                color=COLORS_LIST[1]
+            )
+        ))
+
+        # Waterline
+        fig.add_trace(go.Scatter(
+            x=chronologyPlotDur,
+            y=chronologyWaterLine,
+            mode='lines',
+            name='35%',
+            line=dict(
+                color='#B25068'
+            )
+        ))
+
+        fig.update_layout(
+            title='Análise de Sensibilidade da TIR',
+            xaxis_title='Duration (Anos)',
+            yaxis_title='TIR (%)'
+        )
+
+    return fig
+
+@st.cache(show_spinner=False, suppress_st_warning=True, allow_output_mutation=True )
+def earnoutPlot(earnoutDict):
+
+    # Adjust irrEarnout
+    earnoutIrr  = [earnout if not math.isnan(earnout) else earnoutDict['irrEarnoutScennarios'][index+1]*2 for index, earnout in enumerate(earnoutDict['irrEarnoutScennarios'])]  * 100
+    earnoutDates  = earnoutDict['datesEarnout'] 
+    earnoutDecay = earnoutDict['earnoutDecay'] * 100
+
+    baseDates = pd.date_range(start=earnoutDates[0], end=earnoutDates[-1], freq='M')
+    baseEarnoutIrr = [earnoutIrr[list(earnoutDates).index(date)] if (date in earnoutDates) else None for date in baseDates]
+
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+
+    fig.add_trace(
+        go.Bar(
+            x=baseDates,
+            y=baseEarnoutIrr,
+            name='TIR Earnout (%)',
+            marker_color=COLORS_LIST[0],
+        ), secondary_y=False
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            x=earnoutDates,
+            y=earnoutDecay,
+            name='Earnout (%)',
+            mode='lines+markers',
+            line=dict(
+                color=COLORS_LIST[4]
+            )
+        ), secondary_y=True
+    )
+
+    fig.update_yaxes(title_text='TIR (%)', secondary_y=False)
+    fig.update_yaxes(title_text='Earnout (%)', secondary_y=True)
+
+    fig.update_layout(
+        title_text='Cenário de Earnout'
+    )
+
+    return fig
+

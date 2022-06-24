@@ -1,7 +1,12 @@
 import numpy as np
 import pandas as pd
+pd.options.display.float_format = '{:.3f}'.format
 
 from scipy.interpolate import interp1d
+
+import warnings
+warnings.filterwarnings("ignore")
+
 
 def createRangeEOYs(StartYear, EndYear):
     return pd.date_range(StartYear, EndYear, freq='Y')
@@ -285,3 +290,155 @@ def calculatePriceByDuration(duration, sliderInterestRate, sliderInflation, inpu
                     ), 2)
 
     return price
+
+def generateEarnoutPricingScennario(
+    earnout,
+    tradedValue,
+    startDate,
+    periods,
+    endDate=None,
+    incremental='12M',
+    currentValue=100.0,
+    interestRate=0.08,
+    inflationRate=0.05,
+    preMocPeriodYearEq=0.0,
+    gracePeriodYearEq=0.0,
+    hairCutAuction=0.0,
+):
+    futureValueEarnoutScennarios = []
+    irrEarnoutScennarios = []
+    datesEarnout = createRangeOfPeriods(startDate=startDate, endDate=endDate, incremental=incremental, periods=periods)
+    periodsEarnout = countYearsInRangeOfPeriods(
+        startDate=startDate, endDate=endDate, incremental=incremental, periods=periods
+    )
+    earnoutProRataTemporis = createRangeEarnOutProRateTemporis(
+        earnout=earnout, startDate=startDate, endDate=endDate, incremental=incremental, periods=periods
+    )
+    for i in range(len(periodsEarnout)):
+        futureValueEarnoutScennarios.append(
+            calculateFutureValueEarnout(
+                durationYearEq=periodsEarnout[i],
+                tradedValue=tradedValue,
+                currentValue=currentValue,
+                interestRate=interestRate,
+                inflationRate=inflationRate,
+                preMocPeriodYearEq=preMocPeriodYearEq,
+                gracePeriodYearEq=gracePeriodYearEq,
+                hairCutAuction=hairCutAuction,
+                earnout=earnoutProRataTemporis[i],
+            )
+        )
+        if periodsEarnout[i] != 0:
+            irrEarnoutScennarios.append(
+                calculateIRR(
+                    futureValue=futureValueEarnoutScennarios[i],
+                    tradedValue=tradedValue,
+                    periodYearEq=periodsEarnout[i],
+                    IRRtype='compound',
+                )
+            )
+        else:
+            irrEarnoutScennarios.append(np.nan)
+    return {
+        'earnout': earnout,
+        'tradedValue': tradedValue,
+        'startDate': startDate,
+        'periods': periods,
+        'earnoutDecay': earnoutProRataTemporis,
+        'datesEarnout': datesEarnout,
+        'periodsEarnout': periodsEarnout,
+        'futureValueEarnoutScennarios': futureValueEarnoutScennarios,
+        'irrEarnoutScennarios': irrEarnoutScennarios,
+    }
+
+def calculateFutureValueEarnout(
+    durationYearEq,
+    tradedValue,
+    currentValue=100.0,
+    interestRate=0.08,
+    inflationRate=0.05,
+    preMocPeriodYearEq=0.0,
+    gracePeriodYearEq=0.0,
+    hairCutAuction=0.0,
+    earnout=0.0,
+):
+    futureValue = calculateFutureValue(
+        durationYearEq, currentValue, interestRate, inflationRate, preMocPeriodYearEq, gracePeriodYearEq, hairCutAuction
+    )
+    return futureValue - earnout * (futureValue - tradedValue)
+
+def calculateFutureValue(
+    durationYearEq,
+    currentValue=100.0,
+    interestRate=0.08,
+    inflationRate=0.05,
+    preMocPeriodYearEq=0.0,
+    gracePeriodYearEq=0.0,
+    hairCutAuction=0.0,
+):
+    if durationYearEq <= gracePeriodYearEq:
+        return (currentValue * (1 + inflationRate) ** durationYearEq) * (1 - hairCutAuction)
+    else:
+        return (
+            currentValue
+            * (
+                ((1 + interestRate) ** preMocPeriodYearEq)
+                * ((1 + inflationRate) ** gracePeriodYearEq)
+                * ((1 + interestRate) ** (durationYearEq - gracePeriodYearEq - preMocPeriodYearEq))
+            )
+            * (1 - hairCutAuction)
+        )
+
+def calculateTradePriceGivenIRR(
+    expectedIRR,
+    durationYearEq,
+    priceType='compound',
+    currentValue=100.0,
+    interestRate=0.08,
+    inflationRate=0.05,
+    preMocPeriodYearEq=0.0,
+    gracePeriodYearEq=0.0,
+    hairCutAuction=0.0,
+):
+    futureValue = calculateFutureValue(
+        durationYearEq, currentValue, interestRate, inflationRate, preMocPeriodYearEq, gracePeriodYearEq, hairCutAuction
+    )
+    return futureValue / (1 + expectedIRR) ** durationYearEq
+
+def calculateIRR(futureValue, tradedValue, periodYearEq, IRRtype='compound'):
+    return (
+        (futureValue / tradedValue - 1.0) / periodYearEq
+        if IRRtype == 'linear'
+        else (futureValue / tradedValue) ** (1 / periodYearEq) - 1.0
+    )
+
+def createRangeEarnOutProRateTemporis(earnout, startDate, endDate=None, incremental='12M', periods=None):
+    countPeriods = countYearsInRangeOfPeriods(
+        startDate=startDate, endDate=endDate, incremental=incremental, periods=periods
+    )
+    return [earnout * (1 - (p / countPeriods[-1])) for p in countPeriods]
+
+def countDaysInRangeOfPeriods(startDate, endDate=None, incremental='12M', periods=None):
+    periods = createRangeOfPeriods(startDate=startDate, endDate=endDate, incremental=incremental, periods=periods)
+    return [(p - periods[0]).days for p in periods]
+
+def countYearsInRangeOfPeriods(startDate, endDate=None, incremental='12M', periods=None):
+    periods = createRangeOfPeriods(startDate=startDate, endDate=endDate, incremental=incremental, periods=periods)
+    return [round((p - periods[0]).days / 365.0, 2) for p in periods]
+
+def createRangeOfPeriods(startDate, endDate=None, incremental='12M', periods=None):
+    return (
+        (
+            pd.date_range(
+                start=pd.to_datetime(startDate, infer_datetime_format=True),
+                end=pd.to_datetime(endDate, infer_datetime_format=True),
+                freq=incremental,
+            )
+        )
+        if periods is None
+        else (
+            pd.date_range(
+                start=pd.to_datetime(startDate, infer_datetime_format=True), freq=incremental, periods=periods
+            )
+        )
+    )

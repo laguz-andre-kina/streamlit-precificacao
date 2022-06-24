@@ -1,13 +1,13 @@
 import numbers
-from operator import sub
-from tokenize import Number
 import streamlit as st
 import numpy as np
-import pandas as pd
 
 from st_aggrid import AgGrid
 from st_aggrid.grid_options_builder import GridOptionsBuilder
 from st_aggrid.shared import GridUpdateMode
+
+from fpdf import FPDF
+import base64
 
 from utils.functions import *
 from utils.constants import *
@@ -15,20 +15,23 @@ from utils.computations import *
 
 st.set_page_config(layout="wide")
 
-# def applyStyling():
-#     style = """
-#     <style>
-#     #root > div:nth-child(1) > div.withScreencast > div > div > div > section > div > div:nth-child(1) > div > div:nth-child(3) > div {
-#     border: 0.5px solid;
-#     padding: 50px;
-#     overflow: hidden;
-#     }
-#     </style>
-#     """
-#     st.markdown(style, unsafe_allow_html=True)
 
-# applyStyling()
+def applyStyling():
+    style = """
+    <style>
+    #root > div:nth-child(1) > div.withScreencast > div > div > div > section > div > div:nth-child(1) > div > div.css-ocx5ag.epcbefy1 > div:nth-child(1) > div > div:nth-child(3) > div:nth-child(2) > div:nth-child(1) > div > div > div > div {
+    flex-direction: row;
+    }
+    </style>
+    """
+    st.markdown(style, unsafe_allow_html=True)
 
+applyStyling()
+
+
+def create_download_link(val, filename):
+    b64 = base64.b64encode(val)  # val looks like b'...'
+    return f'<a href="data:application/octet-stream;base64,{b64.decode()}" download="{filename}.pdf">Download file</a>'
 
 # Open connection to db
 cnn = createConnection()
@@ -76,20 +79,20 @@ entityHasDealRecord = entityHasDeal = entityAuctionPrct = entityNoticesCount = e
 # If entity has deal add a column
 if not entityDealDf.empty:
     entityHasDealRecord = True
-    entityHasDeal = entityDealDf['acordo'].iloc[0] if not isinstance(entityDealDf['acordo'].iloc[0], type(None)) else ''
-    entityAuctionPrct = entityDealDf['pctdesagiomax'].iloc[0] if not isinstance(entityDealDf['pctdesagiomax'].iloc[0], type(None)) else ''
+    entityHasDeal = entityDealDf['acordo'].iloc[0] if not isinstance(entityDealDf['acordo'].iloc[0], type(None)) else '-'
+    entityAuctionPrct = entityDealDf['pctdesagiomax'].iloc[0] if not isinstance(entityDealDf['pctdesagiomax'].iloc[0], type(None)) else '-'
     entityNoticesCount = entityDealDf['contagemeditais'].iloc[0] if not isinstance(entityDealDf['contagemeditais'].iloc[0], type(None)) else 0
-    entityDealPaymentWaitYears = float(entityDealDf['prazoesperadoparapagamento'].iloc[0]) if not isinstance(entityDealDf['prazoesperadoparapagamento'].iloc[0], type(None)) else 2.0
+    entityDealPaymentWaitYears = float(entityDealDf['prazoesperadoparapagamento'].iloc[0]) if not isinstance(entityDealDf['prazoesperadoparapagamento'].iloc[0], type(None)) else 0.0
     entityDealAvgAmount = entityDealDf['montantemedioderecursosporedital'].iloc[0] if not isinstance(entityDealDf['montantemedioderecursosporedital'].iloc[0], type(None)) else 0
-    entityDealTerms = entityDealDf['termosacordo'].iloc[0] if not isinstance(entityDealDf['termosacordo'].iloc[0], type(None)) else False
+    entityDealTerms = entityDealDf['termosacordo'].iloc[0]['texto'] if not isinstance(entityDealDf['termosacordo'].iloc[0], type(None)) else '-'
 
-    entityDealFrequency = entityDealDf['dealfrequencia'].iloc[0] if not isinstance(entityDealDf['dealfrequencia'].iloc[0], type(None)) else ''
+    entityDealFrequency = entityDealDf['dealfrequencia'].iloc[0] if not isinstance(entityDealDf['dealfrequencia'].iloc[0], type(None)) else '-'
 
 # Show grid
 with st.expander(label='', expanded=True):
     # entityNoticesCount > 0
-    if bool(entityDealTerms):
-        st.header('KPIs do Acordo')
+    if bool(entityHasDealRecord):
+        st.header('Indicadores do Acordo')
         dealKPIsCols = st.columns(5)
 
         with dealKPIsCols[0]:
@@ -108,10 +111,10 @@ with st.expander(label='', expanded=True):
         with dealKPIsCols[4]:
             st.metric(label='Frequência Editais', value=entityDealFrequency)
 
-        st.write(entityDealDf['termosacordo'].iloc[0]['texto'])
+        st.write(entityDealTerms)
 
 with st.expander(label='', expanded=True):
-    st.header('KPIs e Analytics')
+    st.header('Indicadores e Análise Técnica do Ente')
 
     # KPIs
     entityKPIListCols = st.columns(5)
@@ -120,7 +123,7 @@ with st.expander(label='', expanded=True):
         st.metric(label='Data Atualização Fila', value=queueRefdate)
 
     with entityKPIListCols[1]:
-        totalAmount = f"{totalQueueAmount/B_TIMES:.2f} Bi"
+        totalAmount = f"{totalQueueAmount/M_TIMES:.2f} MM"
         st.metric(label='Montante Total', value=totalAmount)
 
     with entityKPIListCols[2]:
@@ -130,13 +133,13 @@ with st.expander(label='', expanded=True):
 
     with entityKPIListCols[3]:
         exercEntityRCL = entityStatsDf['exercicio'].iloc[0] if not entityStatsDf.empty else '-'
-        entityRCL = f"{entityStatsDf['valor'].iloc[0]/B_TIMES:.2f} Bi" if not entityStatsDf.empty else '-'
+        entityRCL = f"{entityStatsDf['valor'].iloc[0]/M_TIMES:.2f} MM" if not entityStatsDf.empty else '-'
         st.metric(label=f'RCL do Ente (Ano: {exercEntityRCL})', value=entityRCL)
 
     with entityKPIListCols[4]:
         exercPaymentExpectation = entityPlanDf['exercicio'].iloc[0] if not entityPlanDf.empty else '-'
         paymentExpectation = (entityPlanDf['amt'] * entityPlanDf['amtperiodeq']).iloc[0] if not entityPlanDf.empty else '-'
-        paymentExpectationStr = f"{paymentExpectation/B_TIMES:.2f} Bi" if not entityPlanDf.empty else '-'
+        paymentExpectationStr = f"{paymentExpectation/M_TIMES:.2f} MM" if not entityPlanDf.empty else '-'
         st.metric(label=f'Expect. de Pagto. (Ano: {exercPaymentExpectation})', value=paymentExpectationStr)
 
     # Charts
@@ -187,7 +190,7 @@ if bool(selectedItem):
     amountToPayCreditPosition = queueDf.loc[queueDf['queueposition']<=selectedItem['queueposition'], 'value'].sum()
 
     with st.expander(label='', expanded=True):
-        st.header('KPIs do Precatório Selecionado')
+        st.header('Indicadores do Precatório Selecionado')
 
         creditKPICols = st.columns(6)
 
@@ -212,10 +215,12 @@ if bool(selectedItem):
 
         with creditKPICols[5]:
             creditAmount = selectedItem['value']
-            st.metric(label='Montante do Crédito (MM)', value=f'{creditAmount/M_TIMES:.2f}')
+            st.metric(label='Montante do Crédito (K)', value=f'{creditAmount/K_TIMES:.2f}')
 
+if paymentExpectation != '-' and bool(selectedItem):
     # Pricing inputs
     with st.form('selectedCreditForm'):
+        ######################## PRICING ########################
         st.header('Parâmetros p/ Precificação')
 
         pricingOptionsCols = st.columns([4, 2, 2, 2, 2])
@@ -250,7 +255,7 @@ if bool(selectedItem):
                 label='Duration p/ Acordo (Anos)',
                 min_value=0.0,
                 max_value=10.0,
-                value=entityDealPaymentWaitYears if entityDealPaymentWaitYears != False else 2.0,
+                value=entityDealPaymentWaitYears if bool(entityDealPaymentWaitYears) != False else 2.0,
                 step=0.5
             )
 
@@ -281,6 +286,7 @@ if bool(selectedItem):
                 step=0.1,
                 key='inputGracePeriodYearsEq',
             )
+
             inputPreMocPeriodYearsEq = st.slider(
                 'Período pré-MOC (Years)',
                 min_value=0.0,
@@ -290,11 +296,46 @@ if bool(selectedItem):
                 key='inputPreMocPeriodYearsEq',
             )
 
+        secondaryOptions = st.columns([2, 4, 4, 4])
+
+        with secondaryOptions[0]:
+            dealScenario = st.checkbox(label='Cálculo para Acordo', value=entityHasDeal if entityHasDeal != '-' else False)
+
+        with secondaryOptions[1]:
+            basePriceScenario = st.radio(label='Cenário p/ Cronologia', options=['Otimista', 'Ajuste', 'Pior'], index=1)
+
+        st.markdown('---')
+
+        ######################## EARNOUT ########################
+        st.header('Parâmetros p/ Earnout')
+
+        baseEarnoutOptions = st.columns([2, 2, 8])
+        with baseEarnoutOptions[0]:
+            calcEarnout = st.checkbox(label='Cálculo para Earnout', value=True)
+
+        with baseEarnoutOptions[1]:
+            useCalcDuration = st.checkbox(label='Duration Pré Definido p/ Earnout', value=True)
+
+        earnoutOptionsCols = st.columns([2, 4, 4])
+
+        with earnoutOptionsCols[0]:
+            earnoutStrat = st.radio(label='Estratégia de aquisição', options=['Cronologia', 'Acordo'], index = 0)
+
+        with earnoutOptionsCols[1]:
+            earnoutTradeVl = st.number_input(label='Desembolso Inical (%)', min_value=0.00, max_value=100.00, value=40.00)
+
+        with earnoutOptionsCols[2]:
+            earnoutPrct = st.slider(label='Earnout (%)', min_value=0.00, max_value=100.00, value=40.00, step=0.50)
+            earnoutPeriods = st.slider(label='Periodos (Anos)', min_value=0.00, max_value=10.00, value=3.00, step=1.00)
+
+
         submitPricingButton = st.form_submit_button(label='Precificar')
 
 # On click run calculations
-if bool(selectedItem) and submitPricingButton:
+if paymentExpectation != '-' and bool(selectedItem) and submitPricingButton:
     with st.expander(label='', expanded=True):
+        st.header('Precificação')
+
         rangeEOY = createRangeEOYs(START_YEAR, END_YEAR)
         dfDataCurvesIPCAEInterest = curvesIPCAEAndInterest(START_YEAR, END_YEAR)
 
@@ -303,9 +344,9 @@ if bool(selectedItem) and submitPricingButton:
         )
 
         ########################### PRICING ###########################
-        # Pricing for deal
-        # st.write(dealIrr, dealDuration, 100.0, )
+        pricingDict = {}
 
+        # Pricing for deal
         priceDeal = calculateTradePriceGivenIRR(
             expectedIRR=dealIrr / 100,
             durationYearEq=dealDuration,
@@ -317,12 +358,20 @@ if bool(selectedItem) and submitPricingButton:
             hairCutAuction=inputPrctAuction / 100.0
         )
 
+        pricingDict['Acordo'] = {
+            'duration': dealDuration,
+            'pricePrct': round(priceDeal, 2),
+            'irr': round(dealIrr, 2)
+        }
+
+        durationBaseAdj = 1.2
+
         # Pricing for hold
         durationBase = round(getDuration(
             dtPricing.strftime('%Y-%m-%d'),
             dfAmortizationSchedule,
             amountToPayCreditPosition - adjQueueAmount,
-        ), 2)
+        ), 2) * durationBaseAdj
 
         pxCurveBase = getInterpolIRRAndPx(durationBase)
         pxBase = round(pxCurveBase['interpolPx'], 2)
@@ -364,30 +413,95 @@ if bool(selectedItem) and submitPricingButton:
                                 gracePeriodYearEq=inputGracePeriodYearsEq,
                                 ), 2)
 
-        pricingCols = st.columns(4)
+        pricingDict['Otimista'] = {
+            'duration': round(durationBase, 2),
+            'pricePrct': round(priceBase, 2),
+            'irr':round(irrBase, 2),
+            'label': 'Cenário Otimista'
+        }
 
-        with pricingCols[0]:
-            st.metric(label='Duration Acordo (Anos)', value=dealDuration)
-            st.metric(label='Preço Acordo (%)', value=round(priceDeal, 2))
-            st.metric(label='TIR Acordo (%)', value=dealIrr)
+        pricingDict['Ajuste'] = {
+            'duration': round(durationAdj, 2),
+            'pricePrct': round(priceAdj, 2),
+            'irr':round(irrAdj, 2),
+            'label': 'Cenário Base'
+        }
 
-        with pricingCols[1]:
-            st.metric(label='Duration Best Case (Anos)', value=durationBase)
-            st.metric(label='Preço Best Case (%)', value=priceBase)
-            st.metric(label='TIR Best Case (%)', value=irrBase)
+        pricingDict['Pior'] = {
+            'duration': round(durationWorstCase, 2),
+            'pricePrct': round(priceWorstCase, 2),
+            'irr':round(irrWorstCase, 2),
+            'label': 'Pior Cenário'
+        }
 
-        with pricingCols[2]:
-            st.metric(label='Duration c/ Ajuste (Anos)', value=durationAdj)
-            st.metric(label='Preço c/ Ajuste (%)', value=priceAdj)
-            st.metric(label='TIR c/ Ajuste (%)', value=irrAdj)
+        # Acordo
+        if dealScenario:
+            dealCols = st.columns(3)
+            with dealCols[0]:
+                st.metric(label='Preço Acordo (%)', value=pricingDict['Acordo']['pricePrct'])
 
-        with pricingCols[3]:
-                st.metric(label='Duration Pior Cenário (Anos)', value=durationWorstCase)
-                st.metric(label='Preço Pior Cenário (%)', value=priceWorstCase)
-                st.metric(label='TIR Pior Cenário (%)', value=irrWorstCase)
+            with dealCols[1]:
+                st.metric(label='Duration Acordo (Anos)', value=pricingDict['Acordo']['duration'])
 
-        dursToPlot = [dealDuration, durationBase, durationAdj, durationWorstCase]
-        pricesToPlot = [priceDeal, priceBase, priceAdj, priceWorstCase]
+            with dealCols[2]:
+                st.metric(label='TIR Acordo (%)', value=pricingDict['Acordo']['irr'])
 
-        pricesByDurPlot = priceByDurationBarChart(dursToPlot, pricesToPlot)
-        st.plotly_chart(pricesByDurPlot, use_container_width=True)
+            dealPlotDur, dealPlotIrr = createCurveIrrXDuration(priceDeal, dealDuration, hairCutAuction=(inputPrctAuction / 100.0))
+
+        # Cronologia
+        chronologyLabel = pricingDict[basePriceScenario]["label"]
+        chronologyPricePrct = pricingDict[basePriceScenario]['pricePrct']
+        chronologyDuration = pricingDict[basePriceScenario]['duration']
+        chronologyIrr = pricingDict[basePriceScenario]['irr']
+
+        pricingScenarios = st.columns(3)
+        with pricingScenarios[0]:
+            st.metric(label=f'Preço {chronologyLabel} (%)', value=chronologyPricePrct)
+
+        with pricingScenarios[1]:
+            st.metric(label=f'Duration {chronologyLabel} (Anos)', value=chronologyDuration)
+
+        with pricingScenarios[2]:
+            st.metric(label=f'TIR {chronologyLabel} (%)', value=chronologyIrr)
+
+        chronologyPlotDur, chronologyPlotIrr = createCurveIrrXDuration(chronologyPricePrct, durationBase)
+        
+        # TODO: improve logic
+        if dealScenario:
+            chronologyCurve = chronologyIRRDurPlot(
+                chronologyPlotDur,
+                chronologyPlotIrr, 
+                chronologyDuration, 
+                chronologyIrr, 
+                dealPlotDur=dealPlotDur, 
+                dealPlotIrr=dealPlotIrr, 
+                dealDuration=dealDuration,
+                dealIrr=dealIrr)
+        else:
+            chronologyCurve = chronologyIRRDurPlot(
+                chronologyPlotDur,
+                chronologyPlotIrr, 
+                chronologyDuration, 
+                chronologyIrr)
+
+        st.plotly_chart(chronologyCurve, use_container_width=True)
+
+        ########################### EARNOUT ###########################
+        earnoutDurCalc = earnoutPeriods if not bool(useCalcDuration) else math.floor(pricingDict['Otimista']['duration'])
+
+        if bool(calcEarnout) and earnoutDurCalc > 1:
+            earnoutDict = generateEarnoutPricingScennario(
+                earnout = earnoutPrct / 100,
+                tradedValue = earnoutTradeVl,
+                startDate = dtPricing.strftime('%Y-%m-%d'),
+                periods = earnoutPeriods if not bool(useCalcDuration) else math.floor(pricingDict['Otimista']['duration']),
+                currentValue=100.0,
+                interestRate=sliderInterestRate / 100.0,
+                inflationRate=sliderInflation / 100.0,
+                preMocPeriodYearEq=inputPreMocPeriodYearsEq,
+                gracePeriodYearEq=inputGracePeriodYearsEq,
+                hairCutAuction=inputPrctAuction / 100.0 if earnoutStrat == 'Acordo' else 0,
+            )
+
+            earnoutChart = earnoutPlot(earnoutDict)
+            st.plotly_chart(earnoutChart, use_container_width=True)
