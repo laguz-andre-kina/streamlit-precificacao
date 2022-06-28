@@ -49,3 +49,4 @@ streamlit-on-Hover-tabs==0.0.6
 streamlit-option-menu==0.3.2
 fpdf==1.7.2
 plotly==5.8.2
+scipy==1.7.1
