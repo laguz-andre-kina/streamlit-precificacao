@@ -1,15 +1,18 @@
 import numpy as np
 import pandas as pd
+
 pd.options.display.float_format = '{:.3f}'.format
 
 from scipy.interpolate import interp1d
 
 import warnings
+
 warnings.filterwarnings("ignore")
 
 
 def createRangeEOYs(StartYear, EndYear):
     return pd.date_range(StartYear, EndYear, freq='Y')
+
 
 # CurveIPCAEValuesStartPeriods = [0.050, 0.0460, 0.040]
 def fillIPCAERange(StartYear, EndYear, CurveIPCAEValuesStartPeriods=[0.00]):
@@ -57,6 +60,7 @@ def amortizationSchedule(dfDataCurvesIPCAEInterest, RCL, PercRCL, PercAcordo=Fal
     else:
         dfAmortizationSchedule['AmortizationAmount'] = RCL * PercRCL * dfAmortizationSchedule['CumFactorIPCA-E']
     return dfAmortizationSchedule
+
 
 def calculateDuration(lastDuration, amountPrecatoriosNetBalanceEoP, amortizationAmount):
     if amountPrecatoriosNetBalanceEoP > 0:
@@ -151,12 +155,14 @@ def stockAmountAnalysis(
     )
     return dfStockAmountAnalysis
 
+
 # PercSplitPrincipalInterest = 0.5
 def getDuration(RefDatePricing, dfAmortizationSchedule, TotalAmountPrecatoriosBoP, PercSplitPrincipalInterest=1.0):
     dfStockAmountAnalysis = stockAmountAnalysis(
         RefDatePricing, dfAmortizationSchedule, TotalAmountPrecatoriosBoP, PercSplitPrincipalInterest
     )
     return dfStockAmountAnalysis['Duration'].sum()
+
 
 def getDurationAdj(duration):
     dfAdj = pd.DataFrame(
@@ -191,6 +197,7 @@ def getDurationAdj(duration):
             break
     dfAdj['adj'] = dfAdj['pct'] * dfAdj['period']
     return duration + dfAdj['adj'].sum()
+
 
 def getInterpolScennarios():
     scennarios = {
@@ -277,19 +284,26 @@ def calculateIRR(futureValue, tradedValue, periodYearEq, IRRtype='compound', ear
         else ((futureValue - earnout * (futureValue - tradedValue)) / tradedValue) ** (1 / periodYearEq) - 1.0
     )
 
-def calculatePriceByDuration(duration, sliderInterestRate, sliderInflation, inputPreMocPeriodYearsEq, inputGracePeriodYearsEq):
+
+def calculatePriceByDuration(
+    duration, sliderInterestRate, sliderInflation, inputPreMocPeriodYearsEq, inputGracePeriodYearsEq
+):
     pxCurve = getInterpolIRRAndPx(duration)
     irr = round(pxCurve['interpolIRR'] * 100, 2)
-    price =  round(calculateTradePriceGivenIRR(
-                    expectedIRR=(irr / 100),
-                    durationYearEq=duration,
-                    interestRate=sliderInterestRate / 100.0,
-                    inflationRate=sliderInflation / 100.0,
-                    preMocPeriodYearEq=inputPreMocPeriodYearsEq,
-                    gracePeriodYearEq=inputGracePeriodYearsEq,
-                    ), 2)
+    price = round(
+        calculateTradePriceGivenIRR(
+            expectedIRR=(irr / 100),
+            durationYearEq=duration,
+            interestRate=sliderInterestRate / 100.0,
+            inflationRate=sliderInflation / 100.0,
+            preMocPeriodYearEq=inputPreMocPeriodYearsEq,
+            gracePeriodYearEq=inputGracePeriodYearsEq,
+        ),
+        2,
+    )
 
     return price
+
 
 def generateEarnoutPricingScennario(
     earnout,
@@ -351,6 +365,7 @@ def generateEarnoutPricingScennario(
         'irrEarnoutScennarios': irrEarnoutScennarios,
     }
 
+
 def calculateFutureValueEarnout(
     durationYearEq,
     tradedValue,
@@ -361,11 +376,13 @@ def calculateFutureValueEarnout(
     gracePeriodYearEq=0.0,
     hairCutAuction=0.0,
     earnout=0.0,
+    pctInterestTradedValue=0.0,
 ):
     futureValue = calculateFutureValue(
         durationYearEq, currentValue, interestRate, inflationRate, preMocPeriodYearEq, gracePeriodYearEq, hairCutAuction
     )
-    return futureValue - earnout * (futureValue - tradedValue)
+    return futureValue - earnout * (futureValue - tradedValue * (1 + pctInterestTradedValue) ** (durationYearEq))
+
 
 def calculateFutureValue(
     durationYearEq,
@@ -389,6 +406,7 @@ def calculateFutureValue(
             * (1 - hairCutAuction)
         )
 
+
 def calculateTradePriceGivenIRR(
     expectedIRR,
     durationYearEq,
@@ -405,6 +423,7 @@ def calculateTradePriceGivenIRR(
     )
     return futureValue / (1 + expectedIRR) ** durationYearEq
 
+
 def calculateIRR(futureValue, tradedValue, periodYearEq, IRRtype='compound'):
     return (
         (futureValue / tradedValue - 1.0) / periodYearEq
@@ -412,19 +431,23 @@ def calculateIRR(futureValue, tradedValue, periodYearEq, IRRtype='compound'):
         else (futureValue / tradedValue) ** (1 / periodYearEq) - 1.0
     )
 
+
 def createRangeEarnOutProRateTemporis(earnout, startDate, endDate=None, incremental='12M', periods=None):
     countPeriods = countYearsInRangeOfPeriods(
         startDate=startDate, endDate=endDate, incremental=incremental, periods=periods
     )
     return [earnout * (1 - (p / countPeriods[-1])) for p in countPeriods]
 
+
 def countDaysInRangeOfPeriods(startDate, endDate=None, incremental='12M', periods=None):
     periods = createRangeOfPeriods(startDate=startDate, endDate=endDate, incremental=incremental, periods=periods)
     return [(p - periods[0]).days for p in periods]
 
+
 def countYearsInRangeOfPeriods(startDate, endDate=None, incremental='12M', periods=None):
     periods = createRangeOfPeriods(startDate=startDate, endDate=endDate, incremental=incremental, periods=periods)
     return [round((p - periods[0]).days / 365.0, 2) for p in periods]
+
 
 def createRangeOfPeriods(startDate, endDate=None, incremental='12M', periods=None):
     return (
