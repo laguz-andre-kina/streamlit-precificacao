@@ -52,3 +52,4 @@ plotly==5.8.2
 scipy==1.7.1
 kaleido==0.1.0
 num2words==0.5.10
+boto3==1.21.4
