@@ -201,7 +201,7 @@ def generateDoc(entityDict: dict, typeDeal: str, withEarnout: bool, chartsDict: 
     ]
 
     kpisUnitXSpace = 10
-    for kpi in creditKpisShow:
+    for kpi, dist in zip(creditKpisShow, [53, 40, 0]):
         pdf.insertKPI(
             kpiHeader=entityDict[f'{kpi}Header'],
             kpiValue=str(entityDict[f'{kpi}Value']),
@@ -212,7 +212,7 @@ def generateDoc(entityDict: dict, typeDeal: str, withEarnout: bool, chartsDict: 
         pdf.set_font('Arial', style='B', size=KPI_HEADER_FONT_SIZE)
         kpiStrHeaderWidth = pdf.get_string_width(s=entityDict[f'{kpi}Header'])
 
-        kpisUnitXSpace += kpiStrHeaderWidth + 45
+        kpisUnitXSpace += kpiStrHeaderWidth + dist
 
     creditKpisShow = [
         'kpiCreditToPayPosition',
@@ -239,10 +239,39 @@ def generateDoc(entityDict: dict, typeDeal: str, withEarnout: bool, chartsDict: 
     pdf.addNewPage(orientation='P')
     pdf.writeTitle(title='Precificação')
 
-    pdf.image(name=chartsDict['chronologyCurve']['pathToImage'], x=10, y=HEADER_HEIGHT_MARGIN, w=200, h=120, type='png')
+    if typeDeal=='Acordo':
+        creditKpisShow = [
+        'kpiDealPercentage',
+        'kpiDealDuration',
+        'kpiDealTir',
+        ]
+        dist = 35
+    elif typeDeal=='Cronologia':
+        creditKpisShow = [
+            'kpiChronologyPercentage',
+            'kpiChronologyDuration',
+            'kpiChronologyTir',
+        ]
+        dist = 25
+
+    kpisUnitXSpace = 10
+    for kpi in creditKpisShow:
+        pdf.insertKPI(
+            kpiHeader=entityDict[f'{kpi}Header'],
+            kpiValue=str(entityDict[f'{kpi}Value']),
+            x=kpisUnitXSpace,
+            y=HEADER_HEIGHT_MARGIN
+            )
+
+        pdf.set_font('Arial', style='B', size=KPI_HEADER_FONT_SIZE)
+        kpiStrHeaderWidth = pdf.get_string_width(s=entityDict[f'{kpi}Header'])
+
+        kpisUnitXSpace += kpiStrHeaderWidth + dist
+
+    pdf.image(name=chartsDict['chronologyCurve']['pathToImage'], x=10, y=67, w=200, h=120, type='png')
 
     if 'earnoutChart' in chartsDict:
-        pdf.image(name=chartsDict['earnoutChart']['pathToImage'], x=10, y=HEADER_HEIGHT_MARGIN + 120, w=200, h=100, type='png')
+        pdf.image(name=chartsDict['earnoutChart']['pathToImage'], x=10, y=187, w=200, h=100, type='png')
 
     PDFbyte = pdf.returnPdfAsBytes()
     pdf.close()
@@ -729,16 +758,19 @@ def pricingMap() -> None:
                         }
 
                         # Acordo
+                        kpiDealPercentageHeader = 'Preço Acordo (%)'
+                        kpiDealDurationHeader = 'Duration Acordo (Anos)'
+                        kpiDealTirHeader = 'TIR Acordo (%)'
                         if dealScenario:
                             dealCols = st.columns(3)
                             with dealCols[0]:
-                                st.metric(label='Preço Acordo (%)', value=pricingDict['Acordo']['pricePrct'])
+                                st.metric(label=kpiDealPercentageHeader, value=pricingDict['Acordo']['pricePrct'])
 
                             with dealCols[1]:
-                                st.metric(label='Duration Acordo (Anos)', value=pricingDict['Acordo']['duration'])
+                                st.metric(label=kpiDealDurationHeader, value=pricingDict['Acordo']['duration'])
 
                             with dealCols[2]:
-                                st.metric(label='TIR Acordo (%)', value=pricingDict['Acordo']['irr'])
+                                st.metric(label=kpiDealTirHeader, value=pricingDict['Acordo']['irr'])
 
                             dealPlotDur, dealPlotIrr = createCurveIrrXDuration(priceDeal, dealDuration, hairCutAuction=(inputPrctAuction / 100.0))
 
@@ -750,13 +782,16 @@ def pricingMap() -> None:
 
                         pricingScenarios = st.columns(3)
                         with pricingScenarios[0]:
-                            st.metric(label=f'Preço {chronologyLabel} (%)', value=chronologyPricePrct)
+                            kpiChronologyPercentageHeader = f'Preço {chronologyLabel} (%)'
+                            st.metric(label=kpiChronologyPercentageHeader, value=chronologyPricePrct)
 
                         with pricingScenarios[1]:
-                            st.metric(label=f'Duration {chronologyLabel} (Anos)', value=chronologyDuration)
+                            kpiChronologyDurationHeader = f'Duration {chronologyLabel} (Anos)'
+                            st.metric(label=kpiChronologyDurationHeader, value=chronologyDuration)
 
                         with pricingScenarios[2]:
-                            st.metric(label=f'TIR {chronologyLabel} (%)', value=chronologyIrr)
+                            kpiChronologyTirHeader = f'TIR {chronologyLabel} (%)'
+                            st.metric(label=kpiChronologyTirHeader, value=chronologyIrr)
 
                         chronologyPlotDur, chronologyPlotIrr = createCurveIrrXDuration(chronologyPricePrct, durationBase)
                         
@@ -819,7 +854,7 @@ def pricingMap() -> None:
                             
                             with docOptionsCols[2]:
                                 processNumber = st.text_input(label='Número do Processo')
-                                contractualFees = st.number_input(label='Honorários Contratuais', format='%.2f', value=0.00)
+                                contractualFees = st.number_input(label='Honorários Contratuais (%)', format='%.2f', value=0.00, min_value=0.00, max_value=100.00, step=1.00)
 
                             with docOptionsCols[3]:
                                 dealNoticeType = st.radio(label='Instrumento em Caso de Acordo', options=['Edital', 'Decreto'], index=0)
@@ -860,6 +895,7 @@ def pricingMap() -> None:
                         'purchaseAmount': purchaseAmount,
                         'dealNoticeType': dealNoticeType,
                         'dealNoticeNumber': dealNoticeNumber,
+                        'dealScenario': dealScenario,
                         'dealDisbursementMonthly': dealDisbursementMonthly,
                         'creditorName': creditorName,
                         'contractualFees': contractualFees,
@@ -895,6 +931,18 @@ def pricingMap() -> None:
                         'kpiCreditTypeValue': creditType,
                         'kpiCreditAmountHeader': kpiCreditAmountHeader,
                         'kpiCreditAmountValue': kpiCreditAmountValue,
+                        'kpiChronologyPercentageHeader': kpiChronologyPercentageHeader,
+                        'kpiChronologyPercentageValue': chronologyPricePrct,
+                        'kpiChronologyDurationHeader': kpiChronologyDurationHeader,
+                        'kpiChronologyDurationValue': chronologyDuration,
+                        'kpiChronologyTirHeader': kpiChronologyTirHeader,
+                        'kpiChronologyTirValue': chronologyIrr,
+                        'kpiDealPercentageHeader': kpiDealPercentageHeader,
+                        'kpiDealPercentageValue': pricingDict['Acordo']['pricePrct'],
+                        'kpiDealDurationHeader': kpiDealDurationHeader,
+                        'kpiDealDurationValue': pricingDict['Acordo']['duration'],
+                        'kpiDealTirHeader': kpiDealTirHeader,
+                        'kpiDealTirValue': pricingDict['Acordo']['irr'],
                         'pricingAnalyst': pricingAnalyst,
                     }
 
