@@ -1,27 +1,132 @@
 import datetime as dt
 import streamlit as st
 
+import os
+
+TMP_FOLDER = 'tmp'
+IMG_TMP_FOLDER = os.path.join('tmp', 'images')
+DB_CONNECTION_PASS = st.secrets['passwords']['dbConnection']
+
+# Generate doc variables
+PDF_HEADER_IMG = './static/pdf_header.png'
+FPDF_RIGHT_MARGIN = 20
+LINE_BREAK = 8
+TITLE_FONT_SIZE = 18
+HEADER_EXTRA_LEFT_MARGIN = 27.5
+HEADER_HEIGHT_MARGIN = 55
+BASE_FONT_SIZE = 11
+COMPOSE_TEXT_HEIGHT = 6
+BREAK_LINE_HEIGHT = 6
+CELL_HEIGHT = 2
+KPI_HEADER_FONT_SIZE = 11
+KPI_VALUE_FONT_SIZE = 16
+
+# Form variables
+CONST_MAINTAIN_KEYS = ['password_correct', 'headers', 'authentication_status']
+PRICING_ANALYSTS = [
+    '',
+    'JUAREZ VIQUEIRA MIGUEL',
+    'JEFFERSON DANIEL TORRES DE SOUSA',
+    'LIVIA PINHO DAMIATI'
+]
+
+CURRENT_DIR = os.path.dirname(os.getcwd())
 TD_DATE = dt.date.today()
-MIN_DATE = TD_DATE + dt.timedelta(days=-365 * 2)
-MAX_DATE = TD_DATE + dt.timedelta(days=365 * 2)
+MIN_DATE = TD_DATE + dt.timedelta(days=-365*2)
+MAX_DATE = TD_DATE + dt.timedelta(days=365*2)
 START_YEAR = str(TD_DATE.year)
 END_YEAR = '2031'
 
-K_TIMES = 1000
-M_TIMES = 1000000
-B_TIMES = 1000000000
+MEASURE_UNIT_DICT = {
+    'T_TIMES': {
+        'unit': 1000000000000,
+        'suffix': 'Tri'
+    },
+    'B_TIMES': {
+        'unit': 1000000000,
+        'suffix': 'Bi'
+    },
+    'M_TIMES': {
+        'unit': 1000000,
+        'suffix': 'MM'
+    },
+    'K_TIMES': {
+        'unit': 1000,
+        'suffix': 'K'
+    },
+    'U_TIMES': {
+        'unit': 1,
+        'suffix': ''
+    },
+}
 
-DB_CONNECTION_PASS = st.secrets['passwords']['dbConnection']
+MONTH_DICT = {
+    1: 'Janeiro',
+    2: 'Fevereiro',
+    3: 'Março',
+    4: 'Abril',
+    5: 'Maio',
+    6: 'Junho',
+    7: 'Julho',
+    8: 'Agosto',
+    9: 'Setembro',
+    10: 'Outubro',
+    11: 'Novembro',
+    12: 'Dezembro',
+}
+
+FEDERATIVE_DOC_EARNOUT_PARAMS = {
+    2022: {
+        'ALIMENTAR': {
+            'pricePercentage': 0.76,
+            'earnoutText': '',
+        },
+        'COMUM': {
+            'pricePercentage': 0.55,
+            'earnoutText': "Fica ainda estabelecido 'earnout' pro-rata temporis de 25% (quarenta e cinco por cento) onde o valor base para incidência do percentual corresponde ao valor recebido excluindo-se o desembolso inicial. O prazo de vigente do 'earnout' será de 1 (um) ano e 6 (seis) meses a partir de 01/07/2022. Dessa forma, a partir de 01/01/2024 o 'earnout' deixa de existir.",
+        }
+    },
+    2023: {
+        'ALIMENTAR': {
+            'pricePercentage': 0.35,
+            'earnoutText': "Fica ainda estabelecido 'earnout' pro-rata temporis de 45% (quarenta e cinco por cento) onde o valor base para incidência do percentual corresponde ao valor recebido excluindo-se o desembolso inicial. O prazo de vigente do 'earnout' será de 2 (dois) anos a partir de 01/01/2023. Dessa forma, a partir de 01/01/2025 o 'earnout' deixa de existir.",
+        },
+        'COMUM': {
+            'pricePercentage': 0.3,
+            'earnoutText': "Fica ainda estabelecido 'earnout' pro-rata temporis de 45% (quarenta e cinco por cento) onde o valor base para incidência do percentual corresponde ao valor recebido excluindo-se o desembolso inicial. O prazo de vigente do 'earnout' será de 3 (três) anos a partir de 01/01/2023. Dessa forma, a partir de 01/01/2026 o 'earnout' deixa de existir",
+        }
+    },
+    2024: {
+        'ALIMENTAR': {
+            'pricePercentage': 0.3,
+            'earnoutText': "Fica ainda estabelecido 'earnout' pro-rata temporis de 45% (quarenta e cinco por cento) onde o valor base para incidência do percentual corresponde ao valor recebido excluindo-se o desembolso inicial. O prazo de vigente do 'earnout' será de 3 (três) anos a partir de 01/01/2024. Dessa forma, a partir de 01/01/2027 o 'earnout' deixa de existir.",
+        },
+        'COMUM': {
+            'pricePercentage': 0.3,
+            'earnoutText': "Fica ainda estabelecido 'earnout' pro-rata temporis de 45% (quarenta e cinco por cento) onde o valor base para incidência do percentual corresponde ao valor recebido excluindo-se o desembolso inicial. O prazo de vigente do 'earnout' será de 3 (três) anos a partir de 01/01/2024. Dessa forma, a partir de 01/01/2027 o 'earnout' deixa de existir.",
+        }
+    }
+}
 
 RCL_FIELD = 'PREVISÃO ATUALIZADA 2021'
 
-TRANSLATE_BOOL_DICT = {True: 'SIM', False: 'NÃO', '-': '-'}
+TRANSLATE_BOOL_DICT = {
+    True: 'SIM',
+    False: 'NÃO',
+    '-': '-'
+}
+
+YEAR_OPTIONS = [
+    2022,
+    2023,
+    2024
+]
 
 COLORS_LIST = [
     '#081F2D',
     '#00A5B5',
     '#3E7E98',
-    '#081F2D',  #'#748188',
+    '#748188',
     '#00B9F1',
     '#3A4C57',
     '#006F92',
@@ -117,3 +222,4 @@ BIG_COLOR_LIST = [
     '#FFFFFF',
     '#FFFF00',
 ]
+
