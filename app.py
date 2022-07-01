@@ -183,10 +183,11 @@ def generateDoc(entityDict: dict, typeDeal: str, withEarnout: bool, chartsDict: 
     
     # Print charts
     chartsStartY = 70
-    pdf.image(name=chartsDict['stackedConsBarChart']['pathToImage'], x=10, y=chartsStartY, w=100, h=70, type='PNG')
-    pdf.image(name=chartsDict['entityMapPaymentsBarChart']['pathToImage'], x=105, y=chartsStartY, w=100, h=70, type='PNG')
-    pdf.image(name=chartsDict['scatterMapAmountChart']['pathToImage'], x=10, y=chartsStartY + 70, w=100, h=70, type='PNG')
-    pdf.image(name=chartsDict['countPieChart']['pathToImage'], x=105, y=chartsStartY + 70, w=100, h=70, type='PNG')
+    
+    pdf.image(name=chartsDict['stackedConsBarChart']['pathToImage'], x=10, y=chartsStartY, w=100, h=70, type='png')
+    pdf.image(name=chartsDict['entityMapPaymentsBarChart']['pathToImage'], x=105, y=chartsStartY, w=100, h=70, type='png')
+    pdf.image(name=chartsDict['scatterMapAmountChart']['pathToImage'], x=10, y=chartsStartY + 70, w=100, h=70, type='png')
+    pdf.image(name=chartsDict['countPieChart']['pathToImage'], x=105, y=chartsStartY + 70, w=100, h=70, type='png')
 
     # Credit
     pdf.set_font('Arial', style='B', size=TITLE_FONT_SIZE)
@@ -238,10 +239,10 @@ def generateDoc(entityDict: dict, typeDeal: str, withEarnout: bool, chartsDict: 
     pdf.addNewPage(orientation='P')
     pdf.writeTitle(title='Precificação')
 
-    pdf.image(name=chartsDict['chronologyCurve']['pathToImage'], x=10, y=HEADER_HEIGHT_MARGIN, w=200, h=120, type='PNG')
+    pdf.image(name=chartsDict['chronologyCurve']['pathToImage'], x=10, y=HEADER_HEIGHT_MARGIN, w=200, h=120, type='png')
 
     if 'earnoutChart' in chartsDict:
-        pdf.image(name=chartsDict['earnoutChart']['pathToImage'], x=10, y=HEADER_HEIGHT_MARGIN + 120, w=200, h=100, type='PNG')
+        pdf.image(name=chartsDict['earnoutChart']['pathToImage'], x=10, y=HEADER_HEIGHT_MARGIN + 120, w=200, h=100, type='png')
 
     PDFbyte = pdf.returnPdfAsBytes()
     pdf.close()
@@ -256,6 +257,8 @@ def generateDoc(entityDict: dict, typeDeal: str, withEarnout: bool, chartsDict: 
         mime='application/octet-stream',
         on_click=resetDownloadState
     )
+
+    deleteFilesFromS3(chartsDict)
 
 ###################### STYLING ######################
 def applyStyling():
@@ -295,7 +298,7 @@ def pricingMap() -> None:
         if sidebarSelection == 'Pricing':
             with st.container():
                 ###################### CLEAR STATIC FOLDER ######################
-                deleteFilesFromFolder(IMG_TMP_FOLDER)
+                
 
                 ###################### DATABASE ######################
                 # Open connection to db
@@ -943,11 +946,8 @@ def pricingMap() -> None:
                         chartsDict['earnoutChart'] = {'fig': earnoutChart, 'size': {'width': 756*2.5, 'height': 378*2.5}}
                     
                     saveChartsAsStaticImages(chartsDict)
-
                     generateDoc(creditInfoDict, typeDeal, earnoutOnDoc, chartsDict)
 
-                    # Make sure folder is empty
-                    deleteFilesFromFolder(IMG_TMP_FOLDER)
 
 if __name__ == '__main__':
     pricingMap()

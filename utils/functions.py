@@ -2,6 +2,8 @@ import os, shutil
 import sys
 sys.path.append('../')
 
+import boto3
+
 from sqlalchemy import create_engine
 import math
 import sqlalchemy
@@ -38,23 +40,42 @@ def numberToStrDict(value: float) -> dict:
         'suffix': unitDict['suffix']
     }
 
-def saveChartsAsStaticImages(chartsDict: dict = {}, pathToSave: str = IMG_TMP_FOLDER) -> None:
+def deleteFilesFromS3(chartsDict: dict):
+    s3 = boto3.client(
+        's3',
+        aws_access_key_id=st.secrets['AWS']['accessKey'],
+        aws_secret_access_key=st.secrets['AWS']['secretKey'],
+        region_name=st.secrets['AWS']['region']
+        )
+
+    for key in chartsDict.keys():
+        response = s3.delete_object(Bucket=BUCKET, Key=f'{key}.png')
+
+def saveChartsAsStaticImages(chartsDict: dict = {}) -> None:
+    s3 = boto3.client(
+        's3',
+        aws_access_key_id=st.secrets['AWS']['accessKey'],
+        aws_secret_access_key=st.secrets['AWS']['secretKey'],
+        region_name=st.secrets['AWS']['region']
+        )
 
     # Case empty dict
     if not bool(chartsDict): return None
 
     for key, chartInfo in chartsDict.items():
-        pathToImage = os.path.join(pathToSave, f'{key}.png')
-        fig = go.Figure(chartInfo['fig'])
         
-        if key in ['chronologyCurve', 'earnoutChart']: fig.update_layout(title=dict(font=dict(size=32)))
+        fig = go.Figure(chartInfo['fig'])
+        if key in ['chronologyCurve', 'earnoutChart']: 
+            
+            fig.update_layout(title=dict(font=dict(size=32)), width=chartInfo['size']['width'], height=chartInfo['size']['height'])
 
-        if 'size' in chartInfo:
-            fig.write_image(pathToImage, width=chartInfo['size']['width'], height=chartInfo['size']['height'])
-        else:
-            fig.write_image(pathToImage)
+        img_bytes = fig.to_image(format='png')
+        response = s3.put_object(Body=img_bytes, Bucket=BUCKET, Key=f'{key}.png')
+        uploadFileUrl = s3.generate_presigned_url(
+            ClientMethod='get_object', ExpiresIn=300, Params={'Bucket': BUCKET, 'Key': f'{key}.png'}
+        )
 
-        chartInfo['pathToImage'] = pathToImage
+        chartsDict[key]['pathToImage'] = uploadFileUrl
 
 ############################ CONNECTION TO DB ############################
 @st.cache(allow_output_mutation=True, show_spinner=False, suppress_st_warning=True)

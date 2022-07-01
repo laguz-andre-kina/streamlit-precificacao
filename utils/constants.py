@@ -20,6 +20,7 @@ BREAK_LINE_HEIGHT = 6
 CELL_HEIGHT = 2
 KPI_HEADER_FONT_SIZE = 11
 KPI_VALUE_FONT_SIZE = 16
+BUCKET = 'laguz-tech-miscellaneous'
 
 # Form variables
 CONST_MAINTAIN_KEYS = ['password_correct', 'headers', 'authentication_status']
