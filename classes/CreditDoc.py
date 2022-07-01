@@ -11,7 +11,7 @@ from utils.constants import *
 from num2words import num2words
 from fpdf import FPDF
 
-def adjustNum2Words(value):
+def adjustNum2Words(value, monetary = False):
     # Make sure its rounded
     baseValue = round(value, 2)
 
@@ -23,10 +23,18 @@ def adjustNum2Words(value):
         baseValueExtendedSplited = baseValueExtended.split('vírgula')
         baseValueExtendedSplited[1] = decimalPartValueExtended
 
-        return 'vírgula '.join(baseValueExtendedSplited)
+        returnTxt = 'vírgula '.join(baseValueExtendedSplited)
 
     else:
-        return num2words(baseValue, lang='pt-br')
+        returnTxt = num2words(baseValue, lang='pt-br')
+
+    if not bool(monetary): return returnTxt
+
+    if 'vírgula' in returnTxt: 
+        return f'{returnTxt.replace("vírgula", "reais e")} centavos'
+    else:
+        return f'{returnTxt} reais'
+
 
 def numToStr(value):
 
@@ -42,28 +50,27 @@ def creditHeader(processNumber, entityType, entityUf, entityName, creditType):
     return f"""Precatório: {creditType}\nProcesso: {processNumber}\n{entityNameStr}""".encode('latin-1', 'replace').decode('latin-1')
 
 def baseText(creditType, creditId, processNumber, entityType, entityRegime, entityBudgetYear, purchaseAmount, entityName, entityUf):
-    purchaseValueExtended = adjustNum2Words(purchaseAmount)
+    purchaseValueExtended = adjustNum2Words(purchaseAmount, monetary=True)
     entityNameStr = f'{entityType}: {processNumber}' if entityType == 'ESTADO' else f'{entityType}: {entityName}/{entityUf}'
-    baseText = f"""Precatório {creditType}, número {creditId}, expedido junto ao processo {processNumber}, em face do(a) {entityName if entityType == 'ESTADO' else f'{entityName}/{entityUf}'}, ente inscrito no Regime {entityRegime} de Pagamentos, ordem orçamentária {entityBudgetYear}, passível de aquisição pelo valor máximo de R$ {numToStr(purchaseAmount)} ({purchaseValueExtended} reais)."""
+    baseText = f"""Precatório {creditType}, número {creditId}, expedido junto ao processo {processNumber}, em face do(a) {entityName if entityType == 'ESTADO' else f'{entityName}/{entityUf}'}, ente inscrito no Regime {entityRegime} de Pagamentos, ordem orçamentária {entityBudgetYear}, passível de aquisição pelo valor máximo de R$ {numToStr(purchaseAmount)} ({purchaseValueExtended})."""
 
     return baseText.encode('latin-1', 'replace').decode('latin-1')
 
 def federativeBaseText(creditType, creditId, creditProcessId, purchaseAmount, pricePercentage):
-    purchaseAmountExtended = adjustNum2Words(purchaseAmount)
-    adjPricePercentage = pricePercentage*100
+    purchaseAmountExtended = adjustNum2Words(purchaseAmount, monetary=True)
+    adjPricePercentage = round(pricePercentage*100, 2)
     adjPricePercentageExtended = adjustNum2Words(adjPricePercentage)
 
-    baseText = f"""Precatório {creditType}, número {creditId}, expedido junto ao processo {creditProcessId}, em face da União, passível de aquisição pelo valor máximo de R$ {numToStr(purchaseAmount)} ({purchaseAmountExtended} reais), equivalente à {adjPricePercentage}% ({adjPricePercentageExtended} por cento) do montante liquido atualizado."""
+    baseText = f"""Precatório {creditType}, número {creditId}, expedido junto ao processo {creditProcessId}, em face da União, passível de aquisição pelo valor máximo de R$ {numToStr(purchaseAmount)} ({purchaseAmountExtended}), equivalente à {adjPricePercentage}% ({adjPricePercentageExtended} por cento) do montante liquido atualizado."""
     return baseText
 
 def chronologyText(creditQueuePosition, percentageToPayCreditPosition, chronologyDuration, entityPaymentExpectation):
-    chronologyDurationExtended = adjustNum2Words(chronologyDuration)
     entityPaymentExpectationMonthly = round(entityPaymentExpectation / 12, 2)
-    entityPaymentExpectationMonthlyExtended = adjustNum2Words(entityPaymentExpectationMonthly)
+    entityPaymentExpectationMonthlyExtended = adjustNum2Words(entityPaymentExpectationMonthly, monetary=True)
     percentageToPayCreditPositionExtended = adjustNum2Words(percentageToPayCreditPosition)
     creditQueuePositionAdj = numToStr(creditQueuePosition)[:-3]
 
-    chronologyText = f"""O preço apresentado considera a expectativa de recebimento via ordem cronológica em sua elaboração. Assim, dado que o precatório ocupa a posição {creditQueuePositionAdj}° na fila de pagamento, e que, para a sua efetiva liquidação, o ente deverá quitar {numToStr(percentageToPayCreditPosition)}% ({percentageToPayCreditPositionExtended}) do montante do estoque, a expectativa de pagamento é de {numToStr(chronologyDuration)} ({chronologyDurationExtended}) anos, ante o desembolso mensal previsto de R$ {numToStr(entityPaymentExpectationMonthly)} ({entityPaymentExpectationMonthlyExtended} reais) pelo ente junto ao Plano de Pagamentos."""
+    chronologyText = f"""O preço apresentado considera a expectativa de recebimento via ordem cronológica em sua elaboração. Assim, dado que o precatório ocupa a posição {creditQueuePositionAdj}° na fila de pagamento, e que, para a sua efetiva liquidação, o ente deverá quitar {numToStr(percentageToPayCreditPosition)}% ({percentageToPayCreditPositionExtended}) do montante do estoque, a expectativa de pagamento é de {numToStr(chronologyDuration)} anos, ante o desembolso mensal previsto de R$ {numToStr(entityPaymentExpectationMonthly)} ({entityPaymentExpectationMonthlyExtended}) pelo ente junto ao Plano de Pagamentos."""
 
     return chronologyText.encode('latin-1', 'replace').decode('latin-1')
 
@@ -71,9 +78,9 @@ def dealText(dealNoticeType, dealNoticeNumber, dealPrice, dealDuration, dealDisb
 
     dealPriceExtended = adjustNum2Words(dealPrice)
     dealDurationExtended = adjustNum2Words(dealDuration)
-    dealDisbursementMonthlyExtended = adjustNum2Words(dealDisbursementMonthly)
+    dealDisbursementMonthlyExtended = adjustNum2Words(dealDisbursementMonthly, monetary=True)
 
-    dealText = f"""O preço apresentado considera a política de acordos do ente em sua elaboração. Tal política, conforme {dealNoticeType} {dealNoticeNumber}, estabelece proposta de deságio em {numToStr(dealPrice)}% ({dealPriceExtended} por cento), com perspectiva de recebimento em {numToStr(dealDuration)} ({dealDurationExtended}) anos, ante o desembolso mensal previsto de R$ {numToStr(dealDisbursementMonthly)} ({dealDisbursementMonthlyExtended} reais) pelo ente junto ao Plano de Pagamentos."""
+    dealText = f"""O preço apresentado considera a política de acordos do ente em sua elaboração. Tal política, conforme {dealNoticeType} {dealNoticeNumber}, estabelece proposta de deságio em {numToStr(dealPrice)}% ({dealPriceExtended} por cento), com perspectiva de recebimento em {numToStr(dealDuration)} ({dealDurationExtended}) anos, ante o desembolso mensal previsto de R$ {numToStr(dealDisbursementMonthly)} ({dealDisbursementMonthlyExtended}) pelo ente junto ao Plano de Pagamentos."""
 
     return dealText.encode('latin-1', 'replace').decode('latin-1')
 
@@ -84,7 +91,7 @@ def earnoutText(earnout, periods, startDate):
     earnoutExtended = adjustNum2Words(earnoutPrct)
     periodsExtended = adjustNum2Words(periods)
 
-    earnoutText = f"""Fica ainda estabelecido 'earn-out' pro-rata temporis de {numToStr(earnoutPrct)}% ({earnoutExtended} por cento) onde o valor base para incidência do percentual corresponde ao valor recebido excluindo-se o desembolso inicial. O prazo de vigente do 'earn-out' será de {numToStr(periods)} ({periodsExtended}) anos a partir da data de liquidação."""
+    earnoutText = f"""Fica ainda estabelecido 'earn-out' pro-rata temporis de {numToStr(earnoutPrct)}% ({earnoutExtended} por cento) onde o valor base para incidência do percentual corresponde ao valor recebido excluindo-se o desembolso inicial. O prazo de vigente do 'earn-out' será de {numToStr(periods)} anos a partir da data de liquidação."""
 
     return earnoutText.encode('latin-1', 'replace').decode('latin-1')
 
@@ -160,7 +167,7 @@ class CreditDoc(FPDF):
         self.ln(BREAK_LINE_HEIGHT)
 
     def writeFederativeCreditHeader(self) -> None:
-        headerText = f"""Precatório: {self.creditInfoDict['creditType']}\nProcesso: {self.creditInfoDict['creditId']}\nUnião"""
+        headerText = f"""Precatório: {self.creditInfoDict['creditType']}\nProcesso: {self.creditInfoDict['creditProcessId']}\nUnião"""
         self.set_font('Arial', size=BASE_FONT_SIZE)
         self.multi_cell(0, COMPOSE_TEXT_HEIGHT, headerText, 0, align='J')
         self.ln(BREAK_LINE_HEIGHT)

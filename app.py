@@ -309,6 +309,10 @@ def applyStyling():
     flex-direction: row; 
     }
 
+    #root > div:nth-child(1) > div.withScreencast > div > div > div > section.main.css-1v3fvcr.egzxvld3 > div > div:nth-child(1) > div > div:nth-child(2) > div > div.css-ocx5ag.epcbefy1 > div:nth-child(1) > div > div:nth-child(3) > div:nth-child(2) > div:nth-child(1) > div > div > div {
+    flex-direction: row; 
+    }
+
     </style>
     """
     st.markdown(style, unsafe_allow_html=True)
