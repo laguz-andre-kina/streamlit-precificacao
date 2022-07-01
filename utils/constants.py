@@ -84,7 +84,7 @@ FEDERATIVE_DOC_EARNOUT_PARAMS = {
         },
         'COMUM': {
             'pricePercentage': 0.55,
-            'earnoutText': "Fica ainda estabelecido 'earn-out' pro-rata temporis de 25% (quarenta e cinco por cento) onde o valor base para incidência do percentual corresponde ao valor recebido excluindo-se o desembolso inicial. O prazo de vigente do 'earn-out' será de 1 (um) ano e 6 (seis) meses a partir da data da cessão. Dessa forma, a partir de 01/01/2024 o 'earn-out' deixa de existir.",
+            'earnoutText': "Fica ainda estabelecido 'earn-out' pro-rata temporis de 25% (vinte e cinco por cento) onde o valor base para incidência do percentual corresponde ao valor recebido excluindo-se o desembolso inicial. O prazo de vigente do 'earn-out' será de 1 (um) ano e 6 (seis) meses a partir da data da cessão. Dessa forma, a partir de 01/01/2024 o 'earn-out' deixa de existir.",
         }
     },
     2023: {

@@ -50,14 +50,14 @@ def creditHeader(processNumber, entityType, entityUf, entityName, creditType):
     return f"""Precatório: {creditType}\nProcesso: {processNumber}\n{entityNameStr}""".encode('latin-1', 'replace').decode('latin-1')
 
 def baseText(creditType, creditId, processNumber, entityType, entityRegime, entityBudgetYear, purchaseAmount, entityName, entityUf):
-    purchaseValueExtended = adjustNum2Words(purchaseAmount, monetary=True)
+    purchaseValueExtended = adjustNum2Words(round(purchaseAmount, 2), monetary=True)
     entityNameStr = f'{entityType}: {processNumber}' if entityType == 'ESTADO' else f'{entityType}: {entityName}/{entityUf}'
     baseText = f"""Precatório {creditType}, número {creditId}, expedido junto ao processo {processNumber}, em face do(a) {entityName if entityType == 'ESTADO' else f'{entityName}/{entityUf}'}, ente inscrito no Regime {entityRegime} de Pagamentos, ordem orçamentária {entityBudgetYear}, passível de aquisição pelo valor máximo de R$ {numToStr(purchaseAmount)} ({purchaseValueExtended})."""
 
     return baseText.encode('latin-1', 'replace').decode('latin-1')
 
 def federativeBaseText(creditType, creditId, creditProcessId, purchaseAmount, pricePercentage):
-    purchaseAmountExtended = adjustNum2Words(purchaseAmount, monetary=True)
+    purchaseAmountExtended = adjustNum2Words(round(purchaseAmount, 2), monetary=True)
     adjPricePercentage = round(pricePercentage*100, 2)
     adjPricePercentageExtended = adjustNum2Words(adjPricePercentage)
 
@@ -100,7 +100,7 @@ def conclusionText(creditorName, contractualFees):
     contractualFeesExtended = adjustNum2Words(contractualFees)
     contractualFeesText = 'sem reserva de honorários contratuais' if not bool(contractualFees) else f'ressalvados honorários contratuais de {numToStr(contractualFees)}% ({contractualFeesExtended} por cento)'
 
-    conclusionText = f"""Fica ressalvado que o presente valor considera a cessão da totalidade liquida do crédito do(a) credor(a) {creditorName}, (excluindo-se assim contribuições homologadas em conta de execução e Imposto de Renda na forma da legislação vigente), {contractualFeesText}, e que o precatório, e seu respectivo processo, serão alvo de diligência onde, encontradas ocorrências que diminuam este valor (prioridade paga, bloqueio, sequestro, penhora, compensação, acordo, etc.), o dispendido em liquidação poderá ser alterado na proporção do incidente ocorrido.\n\nPor fim, registre-se que toda a precificação se baseia em fontes públicas de informação junto aos Tribunais Regionais e Federais. Estas informações não necessariamente apresentam valores atualizados de requisição, estoque ou até mesmo de previsão de pagamento, levando o presente valor de aquisição a considerar estas incertezas em sua elaboração."""
+    conclusionText = f"""Fica ressalvado que o presente valor considera a cessão da totalidade liquida do crédito do(a) credor(a) {creditorName.upper()}, (excluindo-se assim contribuições homologadas em conta de execução e Imposto de Renda na forma da legislação vigente), {contractualFeesText}, e que o precatório, e seu respectivo processo, serão alvo de diligência onde, encontradas ocorrências que diminuam este valor (prioridade paga, bloqueio, sequestro, penhora, compensação, acordo, etc.), o dispendido em liquidação poderá ser alterado na proporção do incidente ocorrido.\n\nPor fim, registre-se que toda a precificação se baseia em fontes públicas de informação junto aos Tribunais Regionais e Federais. Estas informações não necessariamente apresentam valores atualizados de requisição, estoque ou até mesmo de previsão de pagamento, levando o presente valor de aquisição a considerar estas incertezas em sua elaboração."""
 
     return conclusionText.encode('latin-1', 'replace').decode('latin-1')
 
@@ -115,7 +115,7 @@ def federativeContractualText(creditorName, contractualFees) -> str:
     contractualFeesExtended = adjustNum2Words(contractualFees)
     contractualFeeText = f'ressalvados honorários contratuais de {numToStr(contractualFees)}% ({contractualFeesExtended} por cento)' if bool(contractualFees) else 'sem reserva de honorários contratuais'
 
-    text = f"""Fica ressalvado que o presente valor considera a cessão da totalidade liquida do crédito do(a) credor(a) {creditorName}, (excluindo-se assim contribuições homologadas em conta de execução e Imposto de Renda na forma da legislação vigente), {contractualFeeText}, e que o precatório, e seu respectivo processo, serão alvo de diligência onde, encontradas ocorrências que diminuam este valor (prioridade paga, bloqueio, sequestro, penhora, compensação, acordo, etc.), o dispendido em liquidação poderá ser alterado na proporção do incidente ocorrido."""
+    text = f"""Fica ressalvado que o presente valor considera a cessão da totalidade liquida do crédito do(a) credor(a) {creditorName.upper()}, (excluindo-se assim contribuições homologadas em conta de execução e Imposto de Renda na forma da legislação vigente), {contractualFeeText}, e que o precatório, e seu respectivo processo, serão alvo de diligência onde, encontradas ocorrências que diminuam este valor (prioridade paga, bloqueio, sequestro, penhora, compensação, acordo, etc.), o dispendido em liquidação poderá ser alterado na proporção do incidente ocorrido."""
 
     return text.encode('latin-1', 'replace').decode('latin-1')
 
