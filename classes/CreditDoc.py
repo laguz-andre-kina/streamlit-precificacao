@@ -14,11 +14,10 @@ from fpdf import FPDF
 def adjustNum2Words(value, monetary = False):
     # Make sure its rounded
     baseValue = round(value, 2)
-
     # If has decimal part break in 2 parts else simple num2words
     if not float(baseValue).is_integer():
         baseValueExtended = num2words(baseValue, lang='pt-br')
-        decimalPartValueExtended = num2words(round(baseValue % 1, 2) * 100, lang='pt-br')
+        decimalPartValueExtended = num2words(round((baseValue % 1) * 100, 2) , lang='pt-br')
 
         baseValueExtendedSplited = baseValueExtended.split('vírgula')
         baseValueExtendedSplited[1] = decimalPartValueExtended
@@ -57,6 +56,7 @@ def baseText(creditType, creditId, processNumber, entityType, entityRegime, enti
     return baseText.encode('latin-1', 'replace').decode('latin-1')
 
 def federativeBaseText(creditType, creditId, creditProcessId, purchaseAmount, pricePercentage):
+
     purchaseAmountExtended = adjustNum2Words(round(purchaseAmount, 2), monetary=True)
     adjPricePercentage = round(pricePercentage*100, 2)
     adjPricePercentageExtended = adjustNum2Words(adjPricePercentage)
