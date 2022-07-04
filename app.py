@@ -319,7 +319,7 @@ def applyStyling():
     
 def header():
     st.image('static/header.png', use_column_width=True)
-    st.title('Mapa de Precificação')    
+    st.title('Mapa de Precificação')
 
 
 def pricingMap() -> None:
@@ -381,6 +381,7 @@ def pricingMap() -> None:
 
                 # TODO: Possibily think of better logic for creating KPIs cols (encapsulate into a dict maybe)
                 entityHasDealRecord = entityHasDeal = entityAuctionPrct = entityNoticesCount = entityDealPaymentWaitYears = entityDealAvgAmount = entityDealTerms = entityDealFrequency = False
+                dealPlotDur = dealPlotIrr = dealDuration = dealIrr = False
                 # If entity has deal add a column
                 if not entityDealDf.empty:
                     entityHasDealRecord = True
@@ -810,6 +811,7 @@ def pricingMap() -> None:
                                 dealPlotIrr=dealPlotIrr, 
                                 dealDuration=dealDuration,
                                 dealIrr=dealIrr)
+
                         else:
                             chronologyCurve = chronologyIRRDurPlot(
                                 chronologyPlotDur,
@@ -948,13 +950,25 @@ def pricingMap() -> None:
                         'kpiDealTirHeader': kpiDealTirHeader,
                         'kpiDealTirValue': pricingDict['Acordo']['irr'],
                         'pricingAnalyst': pricingAnalyst,
+                        'typeDeal': typeDeal
                     }
 
                     creditInfoDict = {**creditInfoDict, **earnoutDict}
 
                     earnoutOnDoc = withEarnout
                     # Check if earnout was checked but earnoutDict is empty
-                    if bool(withEarnout) and not bool(earnoutDict): earnoutOnDoc = False
+                    if bool(withEarnout) and not bool(earnoutDict): earnoutOnDoc = False                    
+
+                    typeDealCurve = typeDealIRRDurPlot(
+                            typeDeal,
+                            chronologyPlotDur,
+                            chronologyPlotIrr, 
+                            chronologyDuration, 
+                            chronologyIrr, 
+                            dealPlotDur=dealPlotDur, 
+                            dealPlotIrr=dealPlotIrr, 
+                            dealDuration=dealDuration,
+                            dealIrr=dealIrr)
 
                     # Save charts to static images files
                     chartsDict = {
@@ -987,7 +1001,7 @@ def pricingMap() -> None:
                             }
                         },
                         'chronologyCurve': {
-                            'fig': chronologyCurve,
+                            'fig': typeDealCurve,
                             'size': {
                                 'width': 756*2.5,
                                 'height': 453*2.5

@@ -592,3 +592,178 @@ def earnoutPlot(earnoutDict):
 
     return fig
 
+@st.cache(show_spinner=False, suppress_st_warning=True, allow_output_mutation=True )
+def calculateFutureValueEarnoutPlot(
+    tradedValue,
+    currentValue,
+    interestRate,
+    inflationRate,
+    preMocPeriodYearEq,
+    gracePeriodYearEq,
+    hairCutAuction,
+    earnout,
+    pctInterestTradedValue,
+):
+    duration_X = np.arange(start=0.00, stop=8.00, step=0.5)
+    calcValue_y = [
+        calculateFutureValueEarnout(
+        durationYearEq=dur,
+        tradedValue=tradedValue,
+        currentValue=currentValue,
+        interestRate=interestRate,
+        inflationRate=inflationRate,
+        preMocPeriodYearEq=preMocPeriodYearEq,
+        gracePeriodYearEq=gracePeriodYearEq,
+        hairCutAuction=hairCutAuction,
+        earnout=earnout,
+        pctInterestTradedValue=pctInterestTradedValue)
+
+        for dur in duration_X
+    ]
+
+    fig = go.Figure()
+
+    fig.add_trace(
+        go.Scatter(
+            x=duration_X,
+            y=calcValue_y,
+            text=[f'{calc:,.2f} %' for calc in calcValue_y],
+            mode='lines+markers',
+            line=dict(
+                color=COLORS_LIST[1]
+            ),
+        )
+    )
+
+    fig.update_layout(
+        title='Sensibilidade do Earnout',
+        xaxis_title='Duration (Anos)',
+        yaxis_title='Earnout (%)'
+    )
+
+    return fig
+
+
+@st.cache(show_spinner=False, suppress_st_warning=True)
+def typeDealIRRDurPlot(typeDeal, chronologyPlotDur, chronologyPlotIrr, chronologyDuration, chronologyIrr, **kwargs):
+
+    chronologyWaterLine = np.full(len(chronologyPlotDur), 35)
+
+    # Chart with deal
+    if typeDeal == 'Acordo' and hasattr(kwargs['dealPlotDur'], '__len__'):
+
+        dealWaterLine = np.full(len(kwargs['dealPlotDur']), 35)
+        fig = go.Figure()
+
+        ###################### DEAL ######################
+
+        fig.add_trace(go.Scatter(
+            x=[kwargs['dealDuration']],
+            y=[kwargs['dealIrr']],
+            mode='markers',
+            marker_symbol='cross',
+            name='TIR Compra Acordo',
+            legendrank=2,
+            marker=dict(
+                color=COLORS_LIST[2],
+                size=12
+            )
+        ))
+
+        # Line Chart
+        fig.add_trace(go.Scatter(
+            x=kwargs['dealPlotDur'],
+            y=kwargs['dealPlotIrr'],
+            mode='lines+markers',
+            name='Curva TIR Acordo',
+            legendrank=4,
+            line=dict(
+                color=COLORS_LIST[3]
+            )
+        ))
+
+        # Waterline
+        fig.add_trace(go.Scatter(
+            x=kwargs['dealPlotDur'],
+            y=dealWaterLine,
+            name='35%',
+            mode='lines',
+            showlegend=False,
+            line=dict(
+                color='#B25068'
+            )
+        ))
+
+        # Update axis
+        fig.update_xaxes(title_text='Duration (Anos)')
+        fig.update_yaxes(title_text='TIR Acordo (%)')
+
+        fig.update_layout(
+            title={
+                'text': 'Análise de Sensibilidade da TIR',
+            },
+            legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+            )
+        )
+
+    elif typeDeal == 'Acordo' and not hasattr(kwargs['dealPlotDur'], '__len__'):
+        fig = go.Figure()
+
+    else: 
+        fig = go.Figure()
+
+        fig.add_trace(go.Scatter(
+            x=[chronologyDuration],
+            y=[chronologyIrr],
+            mode='markers',
+            marker_symbol='cross',
+            name='TIR Compra Cronologia',
+            marker=dict(
+                color=COLORS_LIST[0],
+                size=12
+            )
+        ))
+
+        # Line Chart
+        fig.add_trace(go.Scatter(
+            x=chronologyPlotDur,
+            y=chronologyPlotIrr,
+            mode='lines+markers',
+            name='Curva TIR Cronologia',
+            line=dict(
+                color=COLORS_LIST[1]
+            )
+        ))
+
+        # Waterline
+        fig.add_trace(go.Scatter(
+            x=chronologyPlotDur,
+            y=chronologyWaterLine,
+            mode='lines',
+            name='35%',
+            line=dict(
+                color='#B25068'
+            )
+        ))
+
+        fig.update_layout(
+            xaxis_title='Duration (Anos)',
+            yaxis_title='TIR (%)',
+            title={
+                'text': 'Análise de Sensibilidade da TIR',
+            },
+            legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+            )
+        )
+
+    return fig

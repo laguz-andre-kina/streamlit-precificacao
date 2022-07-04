@@ -1,4 +1,3 @@
-from turtle import width
 from sqlalchemy import create_engine
 import datetime as dt
 
@@ -18,12 +17,13 @@ import plotly.graph_objects as go
 startYear = '2022'
 endYear = '2031'
 
-entityId = 115
+entityId = 1167
 
 cnn = createConnection()
 
 entities = getEntities(cnn)
 queueDf = getQueue(entityId, cnn)
+
 
 entityMapDf = getEntityMap(entityId, cnn)
 entityRegimeDf = getEntityRegime(entityId, cnn)
