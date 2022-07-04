@@ -787,7 +787,7 @@ def pricingMap() -> None:
                             kpiChronologyTirHeader = f'TIR {chronologyLabel} (%)'
                             st.metric(label=kpiChronologyTirHeader, value=chronologyIrr)
 
-                        chronologyPlotDur, chronologyPlotIrr = createCurveIrrXDuration(chronologyPricePrct, durationBase)
+                        chronologyPlotDur, chronologyPlotIrr = createCurveIrrXDuration(chronologyPricePrct, chronologyDuration)
                         
                         # TODO: improve logic
                         if dealScenario:
