@@ -32,7 +32,7 @@ setuptools-scm==6.4.2
 SQLAlchemy==1.4.31
 sqlalchemy-migrate==0.13.0
 sqlparse==0.4.2
-streamlit==1.8.1
+streamlit==1.10.0
 streamlit-aggrid==0.2.3.post2
 toml==0.10.2
 tomli==2.0.0

@@ -269,7 +269,6 @@ def calculateFutureValue(
             * (1 - hairCutAuction)
         )
 
-
 def calculateIRR(futureValue, tradedValue, periodYearEq, IRRtype='compound', earnout=0):
     return (
         (futureValue / tradedValue - 1.0) / periodYearEq

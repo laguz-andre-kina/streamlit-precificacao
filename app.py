@@ -290,33 +290,6 @@ def generateDoc(entityDict: dict, typeDeal: str, withEarnout: bool, chartsDict: 
     deleteFilesFromS3(chartsDict)
 
 ###################### STYLING ######################
-def applyStyling():
-    style = """
-    <style>
-    #root > div:nth-child(1) > div.withScreencast > div > div > div > section > div > div:nth-child(1) > div > div.css-ocx5ag.epcbefy1 > div:nth-child(1) > div > div:nth-child(3) > div:nth-child(2) > div:nth-child(1) > div > div > div > div {
-    flex-direction: row;
-    }
-
-    #root > div:nth-child(1) > div.withScreencast > div > div > div > section > div > div:nth-child(1) > div > div:nth-child(12) > ul > li > div.streamlit-expanderContent.st-ae.st-af.st-ag.st-ah.st-ai.st-aj.st-bt.st-br.st-cf.st-cg.st-bw.st-bx.st-as.st-at.st-by.st-bz.st-c0.st-c1.st-c2.st-ch.st-am.st-ci.st-cj.st-b1.st-ck.st-b3.st-c7.st-c8.st-c9 > div:nth-child(1) > div > div.css-ocx5ag.epcbefy1 > div:nth-child(1) > div > div.css-ocqkz7.e1tzin5v4 > div.css-j5r0tf.e1tzin5v2 > div:nth-child(1) > div > div > div > div {
-    flex-direction: row;
-    }
-
-    #root > div:nth-child(1) > div.withScreencast > div > div > div > section > div > div:nth-child(1) > div > div:nth-child(12) > ul > li > div.streamlit-expanderContent.st-ae.st-af.st-ag.st-ah.st-ai.st-aj.st-bt.st-br.st-cf.st-cg.st-bw.st-bx.st-as.st-at.st-by.st-bz.st-c0.st-c1.st-c2.st-ch.st-am.st-ci.st-cj.st-b1.st-ck.st-b3.st-c7.st-c8.st-c9 > div:nth-child(1) > div > div.css-ocx5ag.epcbefy1 > div:nth-child(1) > div > div.css-ocqkz7.e1tzin5v4 > div:nth-child(4) > div:nth-child(1) > div > div:nth-child(1) > div > div {
-    flex-direction: row;
-    }
-
-    #root > div:nth-child(1) > div.withScreencast > div > div > div > section > div > div:nth-child(1) > div > div:nth-child(12) > ul > li > div.streamlit-expanderContent.st-ae.st-af.st-ag.st-ah.st-ai.st-aj.st-bt.st-br.st-cf.st-cg.st-bw.st-bx.st-as.st-at.st-by.st-bz.st-c0.st-c1.st-c2.st-ch.st-am.st-ci.st-cj.st-b1.st-ck.st-b3.st-c7.st-c8.st-c9 > div:nth-child(1) > div > div.css-ocx5ag.epcbefy1 > div:nth-child(1) > div > div.css-ocqkz7.e1tzin5v4 > div:nth-child(1) > div:nth-child(1) > div > div:nth-child(1) > div > div {
-    flex-direction: row; 
-    }
-
-    #root > div:nth-child(1) > div.withScreencast > div > div > div > section.main.css-1v3fvcr.egzxvld3 > div > div:nth-child(1) > div > div:nth-child(2) > div > div.css-ocx5ag.epcbefy1 > div:nth-child(1) > div > div:nth-child(3) > div:nth-child(2) > div:nth-child(1) > div > div > div {
-    flex-direction: row; 
-    }
-
-    </style>
-    """
-    st.markdown(style, unsafe_allow_html=True)
-    
 def header():
     st.image('static/header.png', use_column_width=True)
     st.title('Mapa de Precificação')
@@ -330,9 +303,6 @@ def pricingMap() -> None:
         sidebarSelection = sidebar()
         if sidebarSelection == 'Pricing':
             with st.container():
-                ###################### CLEAR STATIC FOLDER ######################
-                
-
                 ###################### DATABASE ######################
                 # Open connection to db
                 cnn = createConnection()
@@ -341,7 +311,6 @@ def pricingMap() -> None:
                 entitiesDf = getEntities(cnn)
 
                 ###################### HEADER ######################
-                applyStyling()
                 header()
 
                 ###################### FILTERS ######################
@@ -568,9 +537,9 @@ def pricingMap() -> None:
                             )
 
                         with pricingOptionsCols[1]:
-                            inputPrctSplit = st.number_input(label='Dividir Fila p/ Edital (%)', value=50.0 if entityRegime=='ESPECIAL' else 0.0, step=1.0)
+                            inputPrctSplit = st.number_input(label='Porcentagem da Fila p/ Edital (%)', value=50.0 if entityRegime=='ESPECIAL' else 0.0, step=1.0)
                             inputPrctAuction = st.number_input(label='Deságio em Acordo (%)', value=float(entityAuctionPrct*100) if isinstance(entityAuctionPrct, numbers.Number) else 40.0, step=1.0)
-
+                            
                         with pricingOptionsCols[2]:
                             dealIrr = st.slider(
                                 label='TIR p/ Acordo (%)',
@@ -584,7 +553,7 @@ def pricingMap() -> None:
                                 min_value=0.0,
                                 max_value=10.0,
                                 value=entityDealPaymentWaitYears if bool(entityDealPaymentWaitYears) != False else 2.0,
-                                step=0.5
+                                step=0.1
                             )
 
                         with pricingOptionsCols[3]:
@@ -624,13 +593,16 @@ def pricingMap() -> None:
                                 key='inputPreMocPeriodYearsEq',
                             )
 
-                        secondaryOptions = st.columns([2, 4, 4, 4])
+                        secondaryOptions = st.columns([2, 2, 2, 6])
 
                         with secondaryOptions[0]:
                             dealScenario = st.checkbox(label='Cálculo para Acordo', value=entityHasDeal if entityHasDeal != '-' else False)
 
                         with secondaryOptions[1]:
-                            basePriceScenario = st.radio(label='Cenário p/ Cronologia', options=['Otimista', 'Ajuste', 'Pior'], index=1)
+                            basePriceScenario = st.radio(label='Cenário p/ Cronologia', options=['Otimista', 'Ajuste', 'Pior'], index=1, horizontal=True)
+
+                        with secondaryOptions[2]:
+                            fixedDealPrice = st.number_input(label='Preço Fixado p/ Acordo (%)', value=0.00, min_value=0.00, max_value=100.00, step=1.00)
 
                         st.markdown('---')
 
@@ -647,7 +619,7 @@ def pricingMap() -> None:
                         earnoutOptionsCols = st.columns([2, 4, 4])
 
                         with earnoutOptionsCols[0]:
-                            earnoutStrat = st.radio(label='Estratégia de aquisição', options=['Cronologia', 'Acordo'], index = 0)
+                            earnoutStrat = st.radio(label='Estratégia de aquisição', options=['Cronologia', 'Acordo'], index = 0, horizontal=True)
 
                         with earnoutOptionsCols[1]:
                             earnoutTradeVl = st.number_input(label='Desembolso Inical (%)', min_value=0.00, max_value=100.00, value=40.00)
@@ -664,7 +636,6 @@ def pricingMap() -> None:
                     with st.expander(label='', expanded=True):
                         st.header('Precificação')
 
-                        rangeEOY = createRangeEOYs(START_YEAR, END_YEAR)
                         dfDataCurvesIPCAEInterest = curvesIPCAEAndInterest(START_YEAR, END_YEAR)
 
                         dfAmortizationSchedule = amortizationSchedule(
@@ -674,17 +645,35 @@ def pricingMap() -> None:
                         ########################### PRICING ###########################
                         pricingDict = {}
 
-                        # Pricing for deal
-                        priceDeal = calculateTradePriceGivenIRR(
-                            expectedIRR=dealIrr / 100,
-                            durationYearEq=dealDuration,
-                            currentValue=100.0,
-                            interestRate=sliderInterestRate / 100.0,
-                            inflationRate=sliderInflation / 100.0,
-                            preMocPeriodYearEq=inputPreMocPeriodYearsEq,
-                            gracePeriodYearEq=inputGracePeriodYearsEq,
-                            hairCutAuction=inputPrctAuction / 100.0
-                        )
+                        if not bool(fixedDealPrice):
+                            # Pricing for deal
+                            priceDeal = calculateTradePriceGivenIRR(
+                                expectedIRR=dealIrr / 100,
+                                durationYearEq=dealDuration,
+                                currentValue=100.0,
+                                interestRate=sliderInterestRate / 100.0,
+                                inflationRate=sliderInflation / 100.0,
+                                preMocPeriodYearEq=inputPreMocPeriodYearsEq,
+                                gracePeriodYearEq=inputGracePeriodYearsEq,
+                                hairCutAuction=inputPrctAuction / 100.0
+                            )
+
+                        else:
+                            priceDeal = round(fixedDealPrice, 2)
+
+                            fixedDealFutureValue = calculateFutureValue(
+                                durationYearEq=dealDuration,
+                                currentValue=100.0,
+                                interestRate=sliderInterestRate / 100.0,
+                                inflationRate=sliderInflation / 100.0,
+                                preMocPeriodYearEq=inputPreMocPeriodYearsEq,
+                                gracePeriodYearEq=inputGracePeriodYearsEq,
+                                hairCutAuction=inputPrctAuction / 100.0,
+                            )
+                            dealIrr = calculateIRR(
+                                futureValue=fixedDealFutureValue, 
+                                tradedValue=fixedDealPrice, 
+                                periodYearEq=dealDuration) * 100
 
                         pricingDict['Acordo'] = {
                             'duration': dealDuration,
@@ -850,7 +839,7 @@ def pricingMap() -> None:
                         with st.form('docForm'):
                             docOptionsCols = st.columns([4, 4, 4, 4])
                             with docOptionsCols[0]:
-                                typeDeal = st.radio(label='Parecer para: ', options=['Cronologia', 'Acordo'], index=0)
+                                typeDeal = st.radio(label='Parecer para: ', options=['Cronologia', 'Acordo'], index=0, horizontal=True)
                                 withEarnout = st.checkbox(label='Considerar Earnout', value=bool(earnoutDict))
                                 pricingAnalyst = st.selectbox(label='Responsável pelo parecer', options=PRICING_ANALYSTS, index=0)
 

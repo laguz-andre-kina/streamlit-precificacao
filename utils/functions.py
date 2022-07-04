@@ -192,7 +192,7 @@ def getEntityId(entitiesDf, typeEnt, uf, courtname, entityname):
 @st.cache(show_spinner=False, suppress_st_warning=True)
 def createCurveIrrXDuration(chronologyPricePrct, durationLowerLimit, hairCutAuction=0):
     step = 0.2
-    minValue = durationLowerLimit if durationLowerLimit < 2 else durationLowerLimit - step * 2
+    minValue = 0.5 if durationLowerLimit < 2 else durationLowerLimit - step * 2
 
     stopCalc = False
     baseCalcDur = minValue
