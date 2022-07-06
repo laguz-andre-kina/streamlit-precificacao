@@ -687,7 +687,7 @@ def pricingMap() -> None:
                         durationBase = round(getDuration(
                             dtPricing.strftime('%Y-%m-%d'),
                             dfAmortizationSchedule,
-                            amountToPayCreditPosition - adjQueueAmount,
+                            amountToPayCreditPosition - adjQueueAmount * MEASURE_UNIT_DICT['M_TIMES']['unit'],
                         ), 2) * durationBaseAdj
 
                         pxCurveBase = getInterpolIRRAndPx(durationBase)
