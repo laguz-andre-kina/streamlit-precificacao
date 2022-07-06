@@ -190,7 +190,16 @@ def getEntityId(entitiesDf, typeEnt, uf, courtname, entityname):
     return dupEntitiesDf['entityid'].iloc[0]
 
 @st.cache(show_spinner=False, suppress_st_warning=True)
-def createCurveIrrXDuration(chronologyPricePrct, durationLowerLimit, hairCutAuction=0):
+def createCurveIrrXDuration(
+    fixedPricePrct,
+    durationLowerLimit,
+    currentValue=100.0,
+    interestRate=0.08,
+    inflationRate=0.05,
+    preMocPeriodYearEq=0.0,
+    gracePeriodYearEq=0.0,
+    hairCutAuction=0.0):
+    
     step = 0.2
     minValue = 0.5 if durationLowerLimit < 2 else durationLowerLimit - step * 2
 
@@ -205,8 +214,16 @@ def createCurveIrrXDuration(chronologyPricePrct, durationLowerLimit, hairCutAuct
 
     while not bool(stopCalc) and stopFlag < stepsAfterWaterLine:
         try:
-            vfut = calculateFutureValue(baseCalcDur, hairCutAuction=hairCutAuction)
-            irr = round(calculateIRR(futureValue=vfut, tradedValue=chronologyPricePrct, periodYearEq=baseCalcDur), 2) * 100
+            vfut = calculateFutureValue(
+                durationYearEq=baseCalcDur, 
+                currentValue=currentValue,
+                interestRate=interestRate,
+                inflationRate=inflationRate,
+                preMocPeriodYearEq=preMocPeriodYearEq,
+                gracePeriodYearEq=gracePeriodYearEq,
+                hairCutAuction=hairCutAuction
+                )
+            irr = round(calculateIRR(futureValue=vfut, tradedValue=fixedPricePrct, periodYearEq=baseCalcDur)* 100, 2)
 
             durationPlot.append(baseCalcDur)
             irrPlot.append(irr)

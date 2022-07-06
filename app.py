@@ -602,7 +602,7 @@ def pricingMap() -> None:
                             basePriceScenario = st.radio(label='Cenário p/ Cronologia', options=['Otimista', 'Ajuste', 'Pior'], index=1, horizontal=True)
 
                         with secondaryOptions[2]:
-                            fixedDealPrice = st.number_input(label='Preço Fixado p/ Acordo (%)', value=0.00, min_value=0.00, max_value=100.00, step=1.00)
+                            fixedPrice = st.number_input(label='Preço Fixado', value=0.00, min_value=0.00, max_value=100.00, step=1.00)
 
                         st.markdown('---')
 
@@ -645,7 +645,7 @@ def pricingMap() -> None:
                         ########################### PRICING ###########################
                         pricingDict = {}
 
-                        if not bool(fixedDealPrice):
+                        if not bool(fixedPrice):
                             # Pricing for deal
                             priceDeal = calculateTradePriceGivenIRR(
                                 expectedIRR=dealIrr / 100,
@@ -659,7 +659,7 @@ def pricingMap() -> None:
                             )
 
                         else:
-                            priceDeal = round(fixedDealPrice, 2)
+                            priceDeal = round(fixedPrice, 2)
 
                             fixedDealFutureValue = calculateFutureValue(
                                 durationYearEq=dealDuration,
@@ -670,10 +670,10 @@ def pricingMap() -> None:
                                 gracePeriodYearEq=inputGracePeriodYearsEq,
                                 hairCutAuction=inputPrctAuction / 100.0,
                             )
-                            dealIrr = calculateIRR(
+                            dealIrr = round(calculateIRR(
                                 futureValue=fixedDealFutureValue, 
-                                tradedValue=fixedDealPrice, 
-                                periodYearEq=dealDuration) * 100
+                                tradedValue=fixedPrice, 
+                                periodYearEq=dealDuration) * 100, 2)
 
                         pricingDict['Acordo'] = {
                             'duration': dealDuration,
@@ -766,13 +766,40 @@ def pricingMap() -> None:
                             with dealCols[2]:
                                 st.metric(label=kpiDealTirHeader, value=pricingDict['Acordo']['irr'])
 
-                            dealPlotDur, dealPlotIrr = createCurveIrrXDuration(priceDeal, dealDuration, hairCutAuction=(inputPrctAuction / 100.0))
+                            dealPlotDur, dealPlotIrr = createCurveIrrXDuration(
+                                fixedPricePrct=priceDeal, 
+                                durationLowerLimit=dealDuration, 
+                                currentValue=100.0,
+                                interestRate=sliderInterestRate / 100.0,
+                                inflationRate=sliderInflation / 100.0,
+                                preMocPeriodYearEq=inputPreMocPeriodYearsEq,
+                                gracePeriodYearEq=inputGracePeriodYearsEq,
+                                hairCutAuction=inputPrctAuction / 100.0,)
 
                         # Cronologia
                         chronologyLabel = pricingDict[basePriceScenario]["label"]
                         chronologyPricePrct = pricingDict[basePriceScenario]['pricePrct']
                         chronologyDuration = pricingDict[basePriceScenario]['duration']
                         chronologyIrr = pricingDict[basePriceScenario]['irr']
+                        
+                        # TODO: Possibly find a better fix in the future for this gambiarra
+                        if bool(fixedPrice):    
+                            chronologyPricePrct = round(fixedPrice, 2)
+                            chronologyDuration = pricingDict[basePriceScenario]['duration']
+
+                            fixedChronologyFutureValue = calculateFutureValue(
+                                durationYearEq=chronologyDuration,
+                                currentValue=100.0,
+                                interestRate=sliderInterestRate / 100.0,
+                                inflationRate=sliderInflation / 100.0,
+                                preMocPeriodYearEq=inputPreMocPeriodYearsEq,
+                                gracePeriodYearEq=inputGracePeriodYearsEq,
+                                hairCutAuction=0,
+                            )
+                            chronologyIrr = round(calculateIRR(
+                                futureValue=fixedChronologyFutureValue, 
+                                tradedValue=chronologyPricePrct, 
+                                periodYearEq=chronologyDuration) * 100, 2)
 
                         pricingScenarios = st.columns(3)
                         with pricingScenarios[0]:
@@ -787,7 +814,15 @@ def pricingMap() -> None:
                             kpiChronologyTirHeader = f'TIR {chronologyLabel} (%)'
                             st.metric(label=kpiChronologyTirHeader, value=chronologyIrr)
 
-                        chronologyPlotDur, chronologyPlotIrr = createCurveIrrXDuration(chronologyPricePrct, chronologyDuration)
+                        chronologyPlotDur, chronologyPlotIrr = createCurveIrrXDuration(
+                                fixedPricePrct=chronologyPricePrct, 
+                                durationLowerLimit=chronologyDuration, 
+                                currentValue=100.0,
+                                interestRate=sliderInterestRate / 100.0,
+                                inflationRate=sliderInflation / 100.0,
+                                preMocPeriodYearEq=inputPreMocPeriodYearsEq,
+                                gracePeriodYearEq=inputGracePeriodYearsEq,
+                                hairCutAuction=0)
                         
                         # TODO: improve logic
                         if dealScenario:
