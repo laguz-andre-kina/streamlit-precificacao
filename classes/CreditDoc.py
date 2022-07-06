@@ -307,8 +307,7 @@ class CreditDoc(FPDF):
         self.ln(BREAK_LINE_HEIGHT)
 
         capitalizeName = ' '.join([name.capitalize() for name in self.creditInfoDict['pricingAnalyst'].split()])
-        self.multi_cell(0, COMPOSE_TEXT_HEIGHT, f'{capitalizeName}', 0, align='C')
-
+        self.multi_cell(0, COMPOSE_TEXT_HEIGHT, f'{capitalizeName}\nRODRIGO BAER SVIRSKY', 0, align='C')
 
     def insertBreakLine(self) -> None:
         self.ln(BREAK_LINE_HEIGHT)
