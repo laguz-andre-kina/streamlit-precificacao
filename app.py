@@ -602,7 +602,7 @@ def pricingMap() -> None:
                             basePriceScenario = st.radio(label='Cenário p/ Cronologia', options=['Otimista', 'Ajuste', 'Pior'], index=1, horizontal=True)
 
                         with secondaryOptions[2]:
-                            fixedPrice = st.number_input(label='Preço Fixado', value=0.00, min_value=0.00, max_value=100.00, step=1.00)
+                            fixedPrice = st.number_input(label='Preço Fixado (%)', value=0.00, min_value=0.00, max_value=100.00, step=1.00)
 
                         st.markdown('---')
 
